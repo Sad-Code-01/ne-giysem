@@ -8,6 +8,7 @@ import { ServiceError, isServiceError } from '@/services/http';
 import { getCurrentPlace, requestLocationPermission } from '@/services/locationService';
 import { openMeteoProvider } from '@/services/weather/WeatherProvider';
 import { getConsent } from '@/storage/consent';
+import { pushWidgetUpdate } from '@/widgets/resolveWidgetData';
 import {
   getLastSnapshot,
   getOnboardingDone,
@@ -111,6 +112,7 @@ export function useWeatherOutfit(): WeatherOutfitState {
         setErrorKind(null);
         setStatus('ready');
         await setLastSnapshot(fresh);
+        void pushWidgetUpdate();
       } catch (error) {
         await handleFailure(error, 'api');
       }

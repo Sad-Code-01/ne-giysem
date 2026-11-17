@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { SolidButton } from '@/components/SolidButton';
+import { GlassButton } from '@/components/glass/GlassButton';
 import { t } from '@/i18n';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { spacing } from '@/theme/spacing';
@@ -39,8 +39,8 @@ export function WelcomeView({ onUseLocation, isBusy }: WelcomeViewProps) {
       </Text>
 
       <View style={styles.actions}>
-        <SolidButton label={t('welcome.useLocation')} onPress={onUseLocation} disabled={isBusy} style={styles.button} />
-        <SolidButton
+        <GlassButton label={t('welcome.useLocation')} onPress={onUseLocation} disabled={isBusy} style={styles.button} />
+        <GlassButton
           label={t('welcome.searchCity')}
           variant="secondary"
           onPress={() => router.push('/sehir-ara')}

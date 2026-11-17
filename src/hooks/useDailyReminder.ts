@@ -13,7 +13,7 @@ import type { WeatherSnapshot } from '@/types';
  */
 export function useDailyReminder(snapshot: WeatherSnapshot | null): void {
   const { profile, outfitProfile } = useProfile();
-  const { notifEnabled, notifPeriod, notifHour, notifMinute } = profile;
+  const { notifEnabled, notifHour, notifMinute } = profile;
 
   useEffect(() => {
     let cancelled = false;
@@ -27,7 +27,9 @@ export function useDailyReminder(snapshot: WeatherSnapshot | null): void {
       }
       if (cancelled) return;
 
-      const { title, body } = reminderContent(snapshot, outfitProfile, notifPeriod);
+      // 24 saat seçimi: 12'den önce → bugünün kombini, sonra → yarınınki.
+      const period = notifHour < 12 ? 'sabah' : 'aksam';
+      const { title, body } = reminderContent(snapshot, outfitProfile, period);
       await scheduleDailyReminder({
         hour: notifHour,
         minute: notifMinute,
@@ -39,5 +41,5 @@ export function useDailyReminder(snapshot: WeatherSnapshot | null): void {
     return () => {
       cancelled = true;
     };
-  }, [snapshot, outfitProfile, notifEnabled, notifPeriod, notifHour, notifMinute]);
+  }, [snapshot, outfitProfile, notifEnabled, notifHour, notifMinute]);
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -6,15 +6,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DayRow } from '@/components/DayRow';
 import { ErrorView } from '@/components/ErrorView';
 import { GarmentIcon } from '@/components/GarmentIcon';
-import { GlassCard } from '@/components/GlassCard';
 import { LoadingView } from '@/components/LoadingView';
-import { ScreenBackground } from '@/components/ScreenBackground';
+import { Glass, ScreenBackground } from '@/components/glass';
 import { SheetModal } from '@/components/SheetModal';
 import { WeatherIcon } from '@/components/WeatherIcon';
 import { WelcomeView } from '@/components/WelcomeView';
 import { useProfile } from '@/hooks/useProfile';
+import { useTabFade } from '@/hooks/useTabFade';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { garmentLabel } from '@/logic/garmentCatalog';
+import { onScrollToTopRequest } from '@/lib/scrollToTop';
 import { buildDayOutfit } from '@/logic/outfitEngine';
 import { buildSlotWeathers } from '@/logic/slots';
 import { getWeatherVisual } from '@/logic/weatherCodes';
@@ -43,6 +44,16 @@ export default function WeekScreen() {
   const { outfitProfile } = useProfile();
   const { status, snapshot, errorKind, loadMyLocation } = useWeatherContext();
   const [selected, setSelected] = useState<DayOutfit | null>(null);
+  const fadeStyle = useTabFade();
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+
+  useEffect(
+    () =>
+      onScrollToTopRequest('hafta', () => {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }),
+    []
+  );
 
   const days = useMemo(() => {
     if (!snapshot) return [];
@@ -95,6 +106,7 @@ export default function WeekScreen() {
   } else {
     body = (
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[
           styles.content,
           { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + 120 },
@@ -128,7 +140,7 @@ export default function WeekScreen() {
 
   return (
     <ScreenBackground kind={backdrop.kind} isDay={backdrop.isDay}>
-      {body}
+      <Animated.View style={[styles.flex, fadeStyle]}>{body}</Animated.View>
       <SheetModal
         visible={selected !== null}
         onClose={() => setSelected(null)}
@@ -136,7 +148,7 @@ export default function WeekScreen() {
       >
         {selected ? (
           <View style={styles.sheetContent}>
-            <GlassCard>
+            <Glass>
               <View style={styles.sheetHero}>
                 <GarmentIcon garment={selected.dayHero} size={40} color={theme.text} weight="duotone" />
                 <View style={styles.sheetHeroText}>
@@ -177,7 +189,7 @@ export default function WeekScreen() {
                   );
                 })}
               </View>
-            </GlassCard>
+            </Glass>
           </View>
         ) : null}
       </SheetModal>
@@ -186,6 +198,9 @@ export default function WeekScreen() {
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   root: {
     flex: 1,
   },

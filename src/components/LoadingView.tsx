@@ -1,18 +1,40 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+import { useEffect } from 'react';
 
+import { Glass } from '@/components/glass';
 import { useAppTheme } from '@/theme/useAppTheme';
-import { BORDER_WIDTH, radius, spacing } from '@/theme/spacing';
+import { spacing } from '@/theme/spacing';
 
-/** Yükleme: etiket kartı iskeleti. Sahte veri yok. */
+/** Yükleme: nabız atan cam iskelet. Sahte veri yok. */
 export function LoadingView() {
   const theme = useAppTheme();
+  const reduceMotion = useReducedMotion();
+  const pulse = useSharedValue(1);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    pulse.value = withRepeat(withTiming(0.55, { duration: 700 }), -1, true);
+  }, [pulse, reduceMotion]);
+
+  const shimmerStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
+  const bone = theme.isDark ? 'rgba(255,255,255,0.14)' : 'rgba(120,140,165,0.25)';
+
   return (
-    <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
-      <View style={[styles.hole, { borderColor: theme.line, backgroundColor: theme.bg }]} />
-      <View style={[styles.line, { backgroundColor: theme.line, opacity: 0.25, width: '70%' }]} />
-      <View style={[styles.line, { backgroundColor: theme.line, opacity: 0.18, width: '46%' }]} />
-      <ActivityIndicator color={theme.primary} />
-    </View>
+    <Glass style={styles.card}>
+      <Animated.View style={shimmerStyle}>
+        <View style={[styles.hole, { borderColor: bone }]} />
+        <View style={[styles.line, { backgroundColor: bone, width: '70%' }]} />
+        <View style={[styles.line, { backgroundColor: bone, width: '46%' }]} />
+      </Animated.View>
+      <ActivityIndicator color={theme.tabActive} />
+    </Glass>
   );
 }
 
@@ -22,18 +44,18 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingVertical: spacing.xxl,
     paddingHorizontal: spacing.xl,
-    borderRadius: radius.card,
-    borderWidth: BORDER_WIDTH,
     width: '100%',
   },
   hole: {
     width: 14,
     height: 14,
     borderRadius: 7,
-    borderWidth: BORDER_WIDTH,
+    borderWidth: 1,
+    marginBottom: spacing.sm,
   },
   line: {
     height: 12,
     borderRadius: 6,
+    marginBottom: spacing.sm,
   },
 });

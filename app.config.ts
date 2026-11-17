@@ -1,4 +1,43 @@
 import type { ExpoConfig } from 'expo/config';
+import type { WithAndroidWidgetsParams } from 'react-native-android-widget';
+
+const widgetConfig: WithAndroidWidgetsParams = {
+  widgets: [
+    {
+      name: 'Mini',
+      label: 'Ne Giysem? (Mini)',
+      description: '2×1 mini hava ve sıcaklık widget’ı',
+      minWidth: '110dp',
+      minHeight: '56dp',
+      targetCellWidth: 2,
+      targetCellHeight: 1,
+      resizeMode: 'horizontal|vertical',
+      updatePeriodMillis: 1_800_000,
+    },
+    {
+      name: 'Kucuk',
+      label: 'Ne Giysem? (Küçük)',
+      description: 'Küçük hava ve kıyafet önerisi widget’ı',
+      minWidth: '180dp',
+      minHeight: '110dp',
+      targetCellWidth: 3,
+      targetCellHeight: 2,
+      resizeMode: 'horizontal|vertical',
+      updatePeriodMillis: 1_800_000,
+    },
+    {
+      name: 'Orta',
+      label: 'Ne Giysem? (Orta)',
+      description: 'Hava durumu, kıyafet önerisi ve 4 saatlik şerit',
+      minWidth: '280dp',
+      minHeight: '120dp',
+      targetCellWidth: 4,
+      targetCellHeight: 2,
+      resizeMode: 'horizontal|vertical',
+      updatePeriodMillis: 1_800_000,
+    },
+  ],
+};
 
 /**
  * Uygulama yapılandırması.
@@ -24,10 +63,10 @@ const config: ExpoConfig = {
     package: 'com.sadik.negiysem',
     softwareKeyboardLayoutMode: 'resize',
     adaptiveIcon: {
+      // foreground: assets/icon.png (1024×1024 RGBA — güvenli bölgeye dikkat)
+      // backgroundImage/monochromeImage yoksa backgroundColor kullanılır.
+      foregroundImage: './assets/icon.png',
       backgroundColor: '#E6F4FE',
-      foregroundImage: './assets/android-icon-foreground.png',
-      backgroundImage: './assets/android-icon-background.png',
-      monochromeImage: './assets/android-icon-monochrome.png',
     },
     predictiveBackGestureEnabled: false,
   },
@@ -40,6 +79,7 @@ const config: ExpoConfig = {
     'expo-status-bar',
     'expo-web-browser',
     'expo-notifications',
+    ['react-native-android-widget', widgetConfig],
     [
       'expo-splash-screen',
       {

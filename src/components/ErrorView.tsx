@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { SolidButton } from '@/components/SolidButton';
+import { GlassButton } from '@/components/glass/GlassButton';
 import { t } from '@/i18n';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { spacing } from '@/theme/spacing';
@@ -36,8 +36,8 @@ export function ErrorView({ kind, onRetry }: ErrorViewProps) {
         {t(copy.messageKey)}
       </Text>
       <View style={styles.actions}>
-        <SolidButton label={t('common.retry')} onPress={onRetry} />
-        <SolidButton
+        <GlassButton label={t('common.retry')} onPress={onRetry} />
+        <GlassButton
           label={t('welcome.searchCity')}
           variant="secondary"
           onPress={() => router.push('/sehir-ara')}

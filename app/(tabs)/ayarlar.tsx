@@ -1,21 +1,34 @@
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
-import { Bell, CaretRight, MapPin, ShieldCheck, Thermometer, Info } from 'phosphor-react-native';
-import { useState } from 'react';
+import {
+  Bell,
+  CaretRight,
+  DeviceMobile,
+  Info,
+  MapPin,
+  ShieldCheck,
+  Thermometer,
+  type Icon,
+} from 'phosphor-react-native';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
 
-import { Screen } from '@/components/Screen';
+import { Glass, GlassButton, IconBadge, ScreenBackground } from '@/components/glass';
 import { SheetModal } from '@/components/SheetModal';
-import { SolidButton } from '@/components/SolidButton';
 import { useProfile } from '@/hooks/useProfile';
+import { useTabFade } from '@/hooks/useTabFade';
 import { t } from '@/i18n';
+import { onScrollToTopRequest } from '@/lib/scrollToTop';
+import { pushWidgetUpdate } from '@/widgets/resolveWidgetData';
+import { WidgetHelpSheet } from '@/components/WidgetHelpSheet';
 import { cancelDailyReminder } from '@/services/notificationService';
 import { clearConsent } from '@/storage/consent';
 import { clearLastSnapshot, setOnboardingDone, setSelectedPlace } from '@/storage/cache';
 import { useAppTheme } from '@/theme/useAppTheme';
-import { BORDER_WIDTH, radius, SCREEN_PADDING, spacing } from '@/theme/spacing';
+import { MIN_TOUCH_SIZE, spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 
 function SettingsRow({
@@ -24,7 +37,7 @@ function SettingsRow({
   onPress,
   danger = false,
 }: {
-  icon: React.ReactNode;
+  icon: Icon;
   label: string;
   onPress: () => void;
   danger?: boolean;
@@ -35,13 +48,11 @@ function SettingsRow({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={[styles.row, { borderColor: theme.line, backgroundColor: theme.surface }]}
+      style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
     >
-      <View style={[styles.rowIcon, { backgroundColor: danger ? theme.surface : theme.primary }]}>
-        {icon}
-      </View>
+      <IconBadge icon={icon} size={20} boxSize={40} color={danger ? theme.textSecondary : theme.tabActive} />
       <Text
-        style={[typography.body, { color: danger ? theme.text : theme.text, flex: 1 }]}
+        style={[typography.body, { color: theme.text, flex: 1 }]}
         numberOfLines={2}
         maxFontSizeMultiplier={1.3}
       >
@@ -67,6 +78,17 @@ export default function SettingsTabScreen() {
   const { resetProfile } = useProfile();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [widgetHelpOpen, setWidgetHelpOpen] = useState(false);
+  const fadeStyle = useTabFade();
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+
+  useEffect(
+    () =>
+      onScrollToTopRequest('ayarlar', () => {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }),
+    []
+  );
 
   const version = Constants.expoConfig?.version ?? '—';
   const build = Constants.expoConfig?.ios?.buildNumber ?? Constants.expoConfig?.android?.versionCode;
@@ -81,6 +103,7 @@ export default function SettingsTabScreen() {
       await setSelectedPlace(null);
       await clearLastSnapshot();
       await resetProfile();
+      void pushWidgetUpdate();
       setConfirmOpen(false);
       router.replace('/karsilama');
     } finally {
@@ -89,63 +112,62 @@ export default function SettingsTabScreen() {
   };
 
   return (
-    <Screen>
-      <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + 120 },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={[typography.titleL, { color: theme.text }]}>{t('settings.title')}</Text>
+    <ScreenBackground kind="partly" isDay={!theme.isDark}>
+      <Animated.View style={[styles.flex, fadeStyle]}>
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={[
+            styles.content,
+            { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + 120 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View entering={FadeInDown.duration(300)}>
+            <Text style={[typography.titleL, { color: theme.text }]}>{t('settings.title')}</Text>
+          </Animated.View>
 
-        <SectionTitle>{t('settings.sectionYou')}</SectionTitle>
-        <SettingsRow
-          icon={<Thermometer size={20} color={theme.onPrimary} weight="regular" />}
-          label={t('settings.feelTitle')}
-          onPress={() => router.push('/ayarlar/usume')}
-        />
+          <SectionTitle>{t('settings.sectionYou')}</SectionTitle>
+          <Glass padded={false} contentStyle={styles.group}>
+            <SettingsRow icon={Thermometer} label={t('settings.feelTitle')} onPress={() => router.push('/ayarlar/usume')} />
+          </Glass>
 
-        <SectionTitle>{t('settings.sectionApp')}</SectionTitle>
-        <SettingsRow
-          icon={<Bell size={20} color={theme.onPrimary} weight="regular" />}
-          label={t('settings.notifTitle')}
-          onPress={() => router.push('/ayarlar/bildirimler')}
-        />
-        <SettingsRow
-          icon={<MapPin size={20} color={theme.onPrimary} weight="regular" />}
-          label={t('settings.citiesTitle')}
-          onPress={() => router.push('/ayarlar/konumlar')}
-        />
+          <SectionTitle>{t('settings.sectionApp')}</SectionTitle>
+          <Glass padded={false} contentStyle={styles.group}>
+            <SettingsRow icon={Bell} label={t('settings.notifTitle')} onPress={() => router.push('/ayarlar/bildirimler')} />
+            <View style={styles.hairline} />
+            <SettingsRow icon={MapPin} label={t('settings.citiesTitle')} onPress={() => router.push('/ayarlar/konumlar')} />
+            <View style={styles.hairline} />
+            <SettingsRow icon={DeviceMobile} label={t('settings.widgetAdd')} onPress={() => setWidgetHelpOpen(true)} />
+          </Glass>
 
-        <SectionTitle>{t('settings.sectionPrivacy')}</SectionTitle>
-        <SettingsRow
-          icon={<ShieldCheck size={20} color={theme.text} weight="regular" />}
-          label={t('settings.withdraw')}
-          danger
-          onPress={() => setConfirmOpen(true)}
-        />
+          <SectionTitle>{t('settings.sectionPrivacy')}</SectionTitle>
+          <Glass padded={false} contentStyle={styles.group}>
+            <SettingsRow icon={ShieldCheck} label={t('settings.withdraw')} danger onPress={() => setConfirmOpen(true)} />
+          </Glass>
 
-        <SectionTitle>{t('settings.sectionAbout')}</SectionTitle>
-        <View style={[styles.aboutCard, { backgroundColor: theme.surface, borderColor: theme.line }]}>
-          <View style={styles.aboutRow}>
-            <Info size={18} color={theme.textSecondary} weight="regular" />
-            <Text style={[typography.caption, { color: theme.textSecondary }]}>
-              {t('settings.version', { version, build: build ?? '—' })}
+          <SectionTitle>{t('settings.sectionAbout')}</SectionTitle>
+          <Glass contentStyle={styles.aboutCard}>
+            <View style={styles.aboutRow}>
+              <Info size={18} color={theme.textSecondary} weight="regular" />
+              <Text style={[typography.caption, { color: theme.textSecondary }]}>
+                {t('settings.version', { version, build: build ?? '—' })}
+              </Text>
+            </View>
+            <Pressable
+              onPress={() => void WebBrowser.openBrowserAsync('https://open-meteo.com')}
+              accessibilityRole="link"
+              style={styles.aboutLink}
+            >
+              <Text style={[typography.caption, { color: theme.tabActive }]}>{t('settings.dataSource')}</Text>
+            </Pressable>
+            <Text style={[typography.micro, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
+              {t('settings.notOfficial')}
             </Text>
-          </View>
-          <Pressable
-            onPress={() => void WebBrowser.openBrowserAsync('https://open-meteo.com')}
-            accessibilityRole="link"
-            style={styles.aboutLink}
-          >
-            <Text style={[typography.caption, { color: theme.primary }]}>{t('settings.dataSource')}</Text>
-          </Pressable>
-          <Text style={[typography.micro, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
-            {t('settings.notOfficial')}
-          </Text>
-        </View>
-      </ScrollView>
+          </Glass>
+        </ScrollView>
+      </Animated.View>
+
+      <WidgetHelpSheet visible={widgetHelpOpen} onClose={() => setWidgetHelpOpen(false)} />
 
       <SheetModal visible={confirmOpen} onClose={() => setConfirmOpen(false)} title={t('settings.withdrawTitle')}>
         <View style={styles.sheetBody}>
@@ -153,12 +175,12 @@ export default function SettingsTabScreen() {
             {t('settings.withdrawBody')}
           </Text>
           <View style={styles.sheetActions}>
-            <SolidButton
+            <GlassButton
               label={t('settings.withdrawConfirm')}
               disabled={withdrawing}
               onPress={() => void withdraw()}
             />
-            <SolidButton
+            <GlassButton
               label={t('common.cancel')}
               variant="secondary"
               onPress={() => setConfirmOpen(false)}
@@ -166,35 +188,38 @@ export default function SettingsTabScreen() {
           </View>
         </View>
       </SheetModal>
-    </Screen>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   content: {
-    paddingHorizontal: SCREEN_PADDING,
+    paddingHorizontal: spacing.lg,
     gap: spacing.sm,
+  },
+  group: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderRadius: radius.card,
-    borderWidth: BORDER_WIDTH,
-    padding: spacing.lg,
-    minHeight: 64,
+    paddingVertical: spacing.sm,
+    minHeight: MIN_TOUCH_SIZE + 8,
   },
-  rowIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
+  rowPressed: {
+    opacity: 0.7,
+  },
+  hairline: {
+    height: 1,
+    backgroundColor: 'rgba(120,140,165,0.25)',
+    marginLeft: 52,
   },
   aboutCard: {
-    borderRadius: radius.card,
-    borderWidth: BORDER_WIDTH,
-    padding: spacing.lg,
     gap: spacing.sm,
     marginTop: spacing.xs,
   },
@@ -204,7 +229,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   aboutLink: {
-    minHeight: 44,
+    minHeight: MIN_TOUCH_SIZE,
     justifyContent: 'center',
   },
   sheetBody: {

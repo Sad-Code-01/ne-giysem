@@ -5,10 +5,8 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GlassCard } from '@/components/GlassCard';
-import { ScreenBackground } from '@/components/ScreenBackground';
+import { Glass, GlassButton, ScreenBackground } from '@/components/glass';
 import { SettingsHeader } from '@/components/SettingsHeader';
-import { SolidButton } from '@/components/SolidButton';
 import { useProfile } from '@/hooks/useProfile';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { t } from '@/i18n';
@@ -54,13 +52,13 @@ export default function CitiesScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]}
         showsVerticalScrollIndicator={false}
       >
-        <SolidButton
+        <GlassButton
           label={t('welcome.useLocation')}
           variant="secondary"
           onPress={() => void addCurrentLocation()}
           disabled={busy}
         />
-        <SolidButton
+        <GlassButton
           label={t('settings.citiesAdd')}
           onPress={() => router.push('/sehir-ara')}
           disabled={busy}
@@ -71,7 +69,7 @@ export default function CitiesScreen() {
             {t('settings.citiesEmpty')}
           </Text>
         ) : (
-          <GlassCard contentStyle={styles.group}>
+          <Glass contentStyle={styles.group} padded={false}>
             {profile.cities.map((city, index) => (
               <View key={`${city.name}-${city.latitude}-${city.longitude}`}>
                 {index > 0 ? <View style={styles.hairline} /> : null}
@@ -107,7 +105,7 @@ export default function CitiesScreen() {
                 </View>
               </View>
             ))}
-          </GlassCard>
+          </Glass>
         )}
       </ScrollView>
     </ScreenBackground>
@@ -146,7 +144,7 @@ const styles = StyleSheet.create({
   },
   hairline: {
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(120,140,165,0.25)',
     marginLeft: 44,
   },
 });

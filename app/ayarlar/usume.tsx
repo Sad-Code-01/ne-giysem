@@ -3,8 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GlassCard } from '@/components/GlassCard';
-import { ScreenBackground } from '@/components/ScreenBackground';
+import { Glass, ScreenBackground } from '@/components/glass';
 import { SettingsHeader } from '@/components/SettingsHeader';
 import { useProfile } from '@/hooks/useProfile';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
@@ -111,7 +110,7 @@ export default function ColdSettingsScreen() {
           {SCALE_CARDS.map((card, index) => {
             const isCurrent = currentClass === card.key;
             return (
-              <GlassCard
+              <Glass
                 key={card.key}
                 cornerRadius={radius.sm}
                 padding={spacing.md}
@@ -127,7 +126,7 @@ export default function ColdSettingsScreen() {
                 {isCurrent ? (
                   <Text style={[typography.tab, { color: theme.primary }]}>●</Text>
                 ) : null}
-              </GlassCard>
+              </Glass>
             );
           })}
         </View>
@@ -159,7 +158,7 @@ export default function ColdSettingsScreen() {
                   ]}
                 />
                 {index < COLD_OPTIONS.length - 1 ? (
-                  <View style={[styles.sliderLine, { backgroundColor: 'rgba(255,255,255,0.16)' }]} />
+                  <View style={[styles.sliderLine, { backgroundColor: 'rgba(120,140,165,0.35)' }]} />
                 ) : null}
               </Pressable>
             );

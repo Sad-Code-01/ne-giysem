@@ -78,6 +78,22 @@ export async function scheduleDailyReminder(params: {
   });
 }
 
+/** Hemen bir test bildirimi gönderir; izin yoksa false döner. */
+export async function sendTestNotification(): Promise<boolean> {
+  ensureHandler();
+  await ensureAndroidChannel();
+  const granted = await getNotificationPermission();
+  if (!granted) return false;
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: 'Ne Giysem?',
+      body: 'Test bildirimi çalışıyor. 🎉',
+    },
+    trigger: null,
+  });
+  return true;
+}
+
 export async function cancelDailyReminder(): Promise<void> {
   try {
     await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_DEFAULTS.identifier);

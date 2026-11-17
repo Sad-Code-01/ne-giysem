@@ -1,7 +1,15 @@
-import { MagnifyingGlass, MapPin } from 'phosphor-react-native';
+import {
+  CaretRight,
+  CloudRain,
+  Drop,
+  MapPin,
+  NavigationArrow,
+  Wind,
+} from 'phosphor-react-native';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import {
   Pressable,
   RefreshControl,
@@ -13,34 +21,40 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorView } from '@/components/ErrorView';
-import { GarmentIcon } from '@/components/GarmentIcon';
 import { LoadingView } from '@/components/LoadingView';
-import { Screen } from '@/components/Screen';
-import { SegmentedControl } from '@/components/SegmentedControl';
-import { Surface } from '@/components/Surface';
-import { TagCard } from '@/components/TagCard';
-import { WarningChips } from '@/components/WarningChips';
-import { WarningLine } from '@/components/WarningLine';
-import { WeatherIcon } from '@/components/WeatherIcon';
 import { WelcomeView } from '@/components/WelcomeView';
+import { WeatherIcon } from '@/components/WeatherIcon';
+import {
+  Glass,
+  GlassChip,
+  GlassSegmented,
+  IconBadge,
+  ScreenBackground,
+} from '@/components/glass';
+import { glassMaterial } from '@/theme/glass';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useProfile } from '@/hooks/useProfile';
+import { useTabFade } from '@/hooks/useTabFade';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { locale, t } from '@/i18n';
+import { onScrollToTopRequest } from '@/lib/scrollToTop';
 import { garmentLabel } from '@/logic/garmentCatalog';
+import { garmentIcon } from '@/logic/itemIcons';
 import { adviceLines, buildDayOutfit, defaultDayOffset } from '@/logic/outfitEngine';
+import { groupOutfitItems, joinGarmentNames, uniqueLines } from '@/logic/outfitGrouping';
 import { buildSlotWeathers } from '@/logic/slots';
 import { getWeatherCondition, getWeatherVisual } from '@/logic/weatherCodes';
+import { warningIcon } from '@/logic/warningIcons';
 import { useAppTheme } from '@/theme/useAppTheme';
-import { BORDER_WIDTH, radius, SCREEN_PADDING, spacing } from '@/theme/spacing';
-import { typography } from '@/theme/typography';
+import { radius, SCREEN_PADDING, spacing } from '@/theme/spacing';
+import { FONT_FAMILY, typography } from '@/theme/typography';
 import type { HourlyPoint } from '@/types';
 
 function formatClock(epochMs: number): string {
   return new Date(epochMs).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
 }
 
-/** Bugün: konum başlığı, hero kart, kıyafet kartı, gün boyu, saatlik şerit. */
+/** Bugün: konum başlığı, segmented, hero cam kart, kıyafet kartı, gün boyu, saatlik şerit. */
 export default function TodayScreen() {
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
@@ -59,6 +73,16 @@ export default function TodayScreen() {
   } = useWeatherContext();
 
   const [dayChoice, setDayChoice] = useState<0 | 1 | null>(null);
+  const fadeStyle = useTabFade();
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+
+  useEffect(
+    () =>
+      onScrollToTopRequest('index', () => {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+      }),
+    []
+  );
   const dayOffset = snapshot ? (dayChoice ?? defaultDayOffset(snapshot)) : 0;
 
   const dayOutfit = useMemo(
@@ -70,13 +94,19 @@ export default function TodayScreen() {
     [snapshot, dayOutfit, outfitProfile]
   );
 
-  // Seçili günün saatlik noktaları (en fazla 24).
   const hourlyStrip = useMemo<HourlyPoint[]>(() => {
     if (!snapshot || !dayOutfit) return [];
     return snapshot.hourly.filter((point) => point.time.startsWith(dayOutfit.date)).slice(0, 24);
   }, [snapshot, dayOutfit]);
 
   const showOffline = isOffline || isOnline === false;
+
+  const backdrop = !snapshot
+    ? { kind: 'cloudy' as const, isDay: true }
+    : (() => {
+        const visual = getWeatherVisual(snapshot.current.weatherCode, snapshot.current.isDay);
+        return { kind: visual.kind, isDay: snapshot.current.isDay };
+      })();
 
   let body: React.ReactNode;
   if (status === 'welcome') {
@@ -103,10 +133,27 @@ export default function TodayScreen() {
     const wind = Math.round(daily?.windSpeedMax ?? current.windSpeed);
     const rain = Math.round(daily?.precipitationProbabilityMax ?? current.precipitationProbability);
     const condition = getWeatherCondition(current.weatherCode).label;
-    const lines = adviceLines(dayOutfit);
+    const mainSlot =
+      dayOutfit.slots.find((slot) => slot.slot === 'ogle') ??
+      dayOutfit.slots[1] ??
+      dayOutfit.slots[0];
+    const outfitItems = mainSlot?.items ?? [];
+    const groups = groupOutfitItems(outfitItems);
+
+    // Açıklama: en fazla iki satır + gün notu; aynı cümle iki kez görünmez.
+    const description = uniqueLines([
+      ...adviceLines(dayOutfit),
+      ...(dayOutfit.dailyNote ? [dayOutfit.dailyNote] : []),
+    ]).join(' ');
+    // Uyarı çipleri: açıklamada zaten geçen cümleler tekrarlanmaz.
+    const chipWarnings = dayOutfit.warnings.filter(
+      (warning) => !description.includes(warning)
+    );
+    const headerButtonMaterial = glassMaterial(theme, 'pill');
 
     body = (
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[
           styles.content,
           { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + 120 },
@@ -115,169 +162,213 @@ export default function TodayScreen() {
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={() => void refresh()}
-            tintColor={theme.primary}
-            colors={[theme.primary]}
+            tintColor={theme.tabActive}
+            colors={[theme.tabActive]}
           />
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.metaRow}>
+        {/* Header: konum + mevcut konum cam butonu */}
+        <View style={styles.headerRow}>
           <Pressable
             onPress={() => router.push('/ayarlar/konumlar')}
             accessibilityRole="button"
-            style={styles.place}
+            style={styles.placeWrap}
           >
-            <MapPin size={16} color={theme.primary} weight="regular" />
-            <Text style={[typography.caption, { color: theme.text }]} numberOfLines={1}>
-              {place.name}
+            <View style={styles.placeTitleRow}>
+              <MapPin size={18} color={theme.tabActive} weight="regular" />
+              <Text style={[typography.titleM, { color: theme.text }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                {place.name}
+              </Text>
+            </View>
+            <Text style={[typography.caption, { color: theme.textSecondary }]} numberOfLines={1}>
+              {place.region || place.country}
             </Text>
           </Pressable>
           <Pressable
-            onPress={() => router.push('/sehir-ara')}
+            onPress={() => void loadMyLocation()}
             accessibilityRole="button"
-            accessibilityLabel={t('common.search')}
-            style={[styles.iconButton, { borderColor: theme.line, backgroundColor: theme.surface }]}
-          >
-            <MagnifyingGlass size={18} color={theme.text} weight="regular" />
-          </Pressable>
-          <SegmentedControl
-            options={[
-              { value: 0 as const, label: t('day.today') },
-              { value: 1 as const, label: t('day.tomorrow') },
+            accessibilityLabel={t('common.myLocation')}
+            style={[
+              styles.iconButton,
+              {
+                borderColor: headerButtonMaterial.border,
+                backgroundColor: headerButtonMaterial.fill,
+              },
             ]}
-            value={dayOffset}
-            onChange={(next) => setDayChoice(next)}
-          />
+          >
+            <NavigationArrow size={18} color={theme.text} weight="regular" />
+          </Pressable>
         </View>
 
-        <Text style={[typography.display, { color: theme.text }]} maxFontSizeMultiplier={1.15}>
-          {dayOutfit.title}
-        </Text>
-        {dayOutfit.avoidNote ? (
-          <Text style={[typography.body, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
-            {dayOutfit.avoidNote}
-          </Text>
-        ) : null}
+        <GlassSegmented
+          options={[
+            { value: 0 as const, label: t('day.today') },
+            { value: 1 as const, label: t('day.tomorrow') },
+          ]}
+          value={dayOffset}
+          onChange={(next) => setDayChoice(next)}
+        />
 
-        {/* Hero kart: sıcaklık, durum, min/max, his, rüzgâr/yağış/nem */}
-        <Surface>
-          <View style={styles.heroTop}>
-            <View style={styles.heroTempWrap}>
-              <Text style={[typography.display, { color: theme.text }]} maxFontSizeMultiplier={1.1}>
+        {/* Hero kart: durum/min-max, dev sıcaklık, hissedilen, rüzgâr/nem/yağış */}
+        <Animated.View entering={FadeInDown.duration(300).delay(60)}>
+          <Glass blur cornerRadius={radius.card}>
+            <View style={styles.heroTop}>
+              <WeatherIcon
+                kind={getWeatherVisual(current.weatherCode, current.isDay).kind}
+                isDay={current.isDay}
+                size={72}
+                color={theme.tabActive}
+                weight="duotone"
+              />
+              <View style={styles.heroCondition}>
+                <Text style={[typography.titleM, { color: theme.text }]} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                  {condition}
+                </Text>
+                {daily ? (
+                  <Text style={[typography.caption, { color: theme.textSecondary }]} numberOfLines={1}>
+                    {`${t('outfit.minTemp', { temp: Math.round(daily.temperatureMin) })} · ${t('outfit.maxTemp', { temp: Math.round(daily.temperatureMax) })}`}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+            <Animated.View key={Math.round(current.temperature)} entering={FadeIn.duration(200)}>
+              <Text style={[styles.heroTemp, { color: theme.text }]} maxFontSizeMultiplier={1.05}>
                 {`${Math.round(current.temperature)}°`}
               </Text>
-              <Text style={[typography.body, { color: theme.textSecondary }]} numberOfLines={1}>
-                {condition}
-              </Text>
+            </Animated.View>
+            <Text style={[typography.body, { color: theme.textSecondary }]}>
+              {t('outfit.feels', { temp: Math.round(current.apparentTemperature) })}
+            </Text>
+            <View style={[styles.heroDivider, { borderTopColor: 'rgba(120,140,165,0.28)' }]} />
+            <View style={styles.heroStatsRow}>
+              <View style={styles.heroStat}>
+                <Wind size={16} color={theme.textSecondary} weight="regular" />
+                <Text style={[typography.caption, { color: theme.text }]}>{`${wind} km/sa`}</Text>
+                <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.windLabel')}</Text>
+              </View>
+              <View style={styles.heroStat}>
+                <Drop size={16} color={theme.textSecondary} weight="regular" />
+                <Text style={[typography.caption, { color: theme.text }]}>{`%${Math.round(current.humidity)}`}</Text>
+                <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.humidityLabel')}</Text>
+              </View>
+              <View style={styles.heroStat}>
+                <CloudRain size={16} color={theme.textSecondary} weight="regular" />
+                <Text style={[typography.caption, { color: theme.text }]}>{`%${rain}`}</Text>
+                <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.rainLabel')}</Text>
+              </View>
             </View>
-            <WeatherIcon
-              kind={getWeatherVisual(current.weatherCode, current.isDay).kind}
-              isDay={current.isDay}
-              size={56}
-              color={theme.primary}
-              weight="duotone"
-            />
-          </View>
-          <View style={styles.heroStats}>
-            {daily ? (
-              <Text style={[typography.caption, { color: theme.textSecondary }]}>
-                {`${t('outfit.lowShort', { temp: Math.round(daily.temperatureMin) })} · ${t('outfit.highShort', { temp: Math.round(daily.temperatureMax) })}`}
+          </Glass>
+        </Animated.View>
+
+        {/* Kıyafet kartı: başlık + tek paragraf + kategoriye göre birleşik satırlar + uyarı çipleri */}
+        <Animated.View entering={FadeInDown.duration(300).delay(120)}>
+          <Glass>
+            <Text style={[typography.titleS, { color: theme.text }]} maxFontSizeMultiplier={1.2}>
+              {dayOutfit.title}
+            </Text>
+            {description ? (
+              <Text style={[typography.body, styles.cardDesc, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
+                {description}
               </Text>
             ) : null}
-            <Text style={[typography.caption, { color: theme.textSecondary }]}>
-              {`${t('outfit.feels', { temp: Math.round(current.apparentTemperature) })} · ${t('outfit.windLabel')} ${wind} km/sa · ${t('outfit.rainLabel')} %${rain} · ${t('outfit.humidityLabel')} %${Math.round(current.humidity)}`}
-            </Text>
-          </View>
-        </Surface>
-
-        {/* Kıyafet kartı: slot başına kategori ikonlu satırlar + uyarı çipleri */}
-        <Surface>
-          <Text style={[typography.titleS, { color: theme.text }]}>{t('outfit.cardLabel')}</Text>
-          <View style={styles.outfitRows}>
-            {dayOutfit.slots.map((slot) => (
-              <View key={slot.slot} style={styles.outfitRow}>
-                <Text style={[typography.caption, styles.slotLabel, { color: theme.textSecondary }]}>
-                  {t(`slot.${slot.slot}`)}
-                </Text>
-                <View style={styles.itemChips}>
-                  {slot.items.map((item) => (
-                    <View
-                      key={item.id}
-                      style={[styles.itemChip, { backgroundColor: theme.bg, borderColor: theme.line }]}
-                    >
-                      <GarmentIcon garment={item} size={15} color={theme.textSecondary} />
-                      <Text style={[typography.micro, { color: theme.text }]} numberOfLines={1}>
-                        {garmentLabel(item)}
+            <View style={styles.outfitRows}>
+              {groups.map((group) => {
+                const representative =
+                  group.items.reduce((best, item) => (item.warmth > best.warmth ? item : best), group.items[0]);
+                const rowIcon = garmentIcon(representative);
+                const RowIcon = rowIcon;
+                return (
+                  <View key={group.key} style={styles.outfitRow}>
+                    <IconBadge icon={RowIcon} size={18} boxSize={36} />
+                    <View style={styles.outfitRowText}>
+                      <Text style={[typography.micro, { color: theme.textSecondary }]} numberOfLines={1}>
+                        {t(group.labelKey)}
+                      </Text>
+                      <Text style={[typography.body, { color: theme.text }]} maxFontSizeMultiplier={1.2}>
+                        {joinGarmentNames(group)}
                       </Text>
                     </View>
-                  ))}
-                </View>
+                    <CaretRight size={16} color={theme.textSecondary} weight="regular" />
+                  </View>
+                );
+              })}
+            </View>
+            {chipWarnings.length > 0 ? (
+              <View style={styles.chipWrap}>
+                {chipWarnings.map((warning) => (
+                  <GlassChip key={warning} label={warning} icon={warningIcon(warning)} tone="amber" />
+                ))}
               </View>
-            ))}
-          </View>
-          <WarningChips warnings={dayOutfit.warnings} />
-        </Surface>
+            ) : null}
+          </Glass>
+        </Animated.View>
 
-        {/* Gün boyu: sabah/öğle/akşam */}
-        <TagCard>
-          <View style={styles.slots}>
-            {dayOutfit.slots.map((slot, index) => {
-              const weather = slotWeathers.find((item) => item.slot === slot.slot);
-              const muted = weather?.past ?? false;
-              const ink = muted ? theme.textSecondary : theme.text;
-              const slotCondition = weather ? getWeatherCondition(weather.dominantCode).label : '';
-              return (
-                <View
-                  key={slot.slot}
-                  style={[
-                    styles.slot,
-                    index > 0 && { borderLeftWidth: 1.5, borderLeftColor: theme.line },
-                  ]}
-                >
-                  <Text style={[typography.caption, { color: ink }]}>{t(`slot.${slot.slot}`)}</Text>
-                  <Text style={[typography.micro, { color: theme.textSecondary }]}>{weather?.hourLabel}</Text>
-                  <Text style={[typography.caption, { color: ink }]} numberOfLines={2}>
-                    {slotCondition}
-                  </Text>
-                  <Text style={[typography.metric, { color: ink }]}>
-                    {weather ? `${Math.round(weather.avgApparent)}°` : ''}
-                  </Text>
-                  <Text style={[typography.titleM, { color: ink }]} numberOfLines={2}>
-                    {garmentLabel(slot.hero)}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </TagCard>
+        {/* Gün boyu: sabah/öğle/akşam cam hücreleri */}
+        <Animated.View entering={FadeInDown.duration(300).delay(180)}>
+          <Glass padded={false} contentStyle={styles.slotsCard}>
+            <View style={styles.slots}>
+              {dayOutfit.slots.map((slot, index) => {
+                const weather = slotWeathers.find((item) => item.slot === slot.slot);
+                const muted = weather?.past ?? false;
+                const ink = muted ? theme.textSecondary : theme.text;
+                const hero = slot.hero;
+                return (
+                  <View
+                    key={slot.slot}
+                    style={[
+                      styles.slot,
+                      index > 0 && { borderLeftWidth: 1, borderLeftColor: 'rgba(120,140,165,0.28)' },
+                    ]}
+                  >
+                    <Text style={[typography.micro, { color: theme.textSecondary }]}>{t(`slot.${slot.slot}`)}</Text>
+                    <Text style={[typography.caption, { color: ink }]} numberOfLines={1}>
+                      {weather?.hourLabel}
+                    </Text>
+                    {weather ? (
+                      <WeatherIcon
+                        kind={getWeatherVisual(weather.dominantCode, weather.isDay).kind}
+                        isDay={weather.isDay}
+                        size={22}
+                        color={ink}
+                      />
+                    ) : null}
+                    <Text style={[typography.titleS, { color: ink }]}>
+                      {weather ? `${Math.round(weather.avgApparent)}°` : ''}
+                    </Text>
+                    <View style={[styles.slotChip, { borderColor: headerButtonMaterial.border, backgroundColor: headerButtonMaterial.fill }]}>
+                      <Text style={[typography.micro, { color: theme.text }]} numberOfLines={1}>
+                        {garmentLabel(hero)}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </Glass>
+        </Animated.View>
 
         {/* Saatlik şerit */}
         {hourlyStrip.length > 0 ? (
           <View style={styles.hourlyWrap}>
             <Text style={[typography.titleS, { color: theme.text }]}>{t('hourly.title')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hourlyRow}>
-              {hourlyStrip.map((point) => {
+              {hourlyStrip.map((point, index) => {
                 const visual = getWeatherVisual(point.weatherCode, point.isDay);
                 return (
-                  <View key={point.time} style={[styles.hourCell, { borderColor: theme.line, backgroundColor: theme.surface }]}>
+                  <Glass key={point.time} variant="chip" cornerRadius={radius.sm} padded={false} contentStyle={styles.hourCell}>
                     <Text style={[typography.micro, { color: theme.textSecondary }]}>
-                      {point.time.slice(11, 16)}
+                      {index === 0 ? t('hourly.now') : point.time.slice(11, 16)}
                     </Text>
                     <WeatherIcon kind={visual.kind} isDay={point.isDay} size={20} color={theme.textSecondary} />
                     <Text style={[typography.caption, { color: theme.text }]}>{`${Math.round(point.temperature)}°`}</Text>
-                  </View>
+                  </Glass>
                 );
               })}
             </ScrollView>
           </View>
         ) : null}
 
-        <WarningLine lines={lines} />
-        {dayOutfit.dailyNote ? (
-          <Text style={[typography.body, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
-            {dayOutfit.dailyNote}
-          </Text>
-        ) : null}
         {showOffline ? (
           <Text style={[typography.caption, { color: theme.text }]}>
             {lastUpdatedLabel
@@ -293,14 +384,17 @@ export default function TodayScreen() {
   }
 
   return (
-    <Screen>
+    <ScreenBackground kind={backdrop.kind} isDay={backdrop.isDay}>
       <StatusBar style={theme.isDark ? 'light' : 'dark'} />
-      {body}
-    </Screen>
+      <Animated.View style={[styles.flex, fadeStyle]}>{body}</Animated.View>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: {
+    flex: 1,
+  },
   centered: {
     flex: 1,
     justifyContent: 'center',
@@ -310,66 +404,86 @@ const styles = StyleSheet.create({
     paddingHorizontal: SCREEN_PADDING,
     gap: spacing.md,
   },
-  metaRow: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  place: {
+  placeWrap: {
+    flex: 1,
+    gap: 2,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  placeTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    flexShrink: 1,
-    minHeight: 44,
   },
   iconButton: {
     width: 44,
     height: 44,
     borderRadius: radius.pill,
-    borderWidth: BORDER_WIDTH,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     gap: spacing.md,
   },
-  heroTempWrap: {
+  heroCondition: {
+    flex: 1,
     gap: 2,
   },
-  heroStats: {
-    gap: spacing.xs,
+  heroTemp: {
+    fontFamily: FONT_FAMILY.regular,
+    fontSize: 88,
+    lineHeight: 96,
+    letterSpacing: -2,
+    fontVariant: ['tabular-nums'],
     marginTop: spacing.sm,
+  },
+  heroDivider: {
+    borderTopWidth: 1,
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+  },
+  heroStatsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  heroStat: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  cardDesc: {
+    marginTop: spacing.xs,
   },
   outfitRows: {
     gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   outfitRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacing.sm,
+    minHeight: 44,
   },
-  slotLabel: {
-    width: 52,
-    paddingTop: 4,
-  },
-  itemChips: {
+  outfitRowText: {
     flex: 1,
+    gap: 1,
+  },
+  chipWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.xs,
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
-  itemChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    borderRadius: radius.pill,
-    borderWidth: BORDER_WIDTH,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    maxWidth: '100%',
+  slotsCard: {
+    padding: spacing.md,
   },
   slots: {
     flexDirection: 'row',
@@ -378,7 +492,14 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
-    paddingBottom: spacing.sm,
+    alignItems: 'flex-start',
+  },
+  slotChip: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    marginTop: spacing.xs,
   },
   hourlyWrap: {
     gap: spacing.sm,
@@ -390,11 +511,9 @@ const styles = StyleSheet.create({
   hourCell: {
     alignItems: 'center',
     gap: 4,
-    borderRadius: radius.sm,
-    borderWidth: BORDER_WIDTH,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    minWidth: 64,
+    minWidth: 60,
   },
   footer: {
     textAlign: 'center',

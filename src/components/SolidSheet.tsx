@@ -1,19 +1,60 @@
+import { BlurView } from 'expo-blur';
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { glassMaterial } from '@/theme/glass';
 import { useAppTheme } from '@/theme/useAppTheme';
-import { BORDER_WIDTH, radius, spacing } from '@/theme/spacing';
+import { spacing } from '@/theme/spacing';
+
+const ANDROID_BLUR_METHOD =
+  Platform.OS === 'android'
+    ? Platform.Version >= 31
+      ? 'dimezisBlurViewSdk31Plus'
+      : 'dimezisBlurView'
+    : undefined;
 
 interface SolidSheetProps {
   children: ReactNode;
   topPadding?: number;
 }
 
-/** Opak alt sheet. Blur yok; zemin rengi yüzey. */
+/**
+ * Cam alt sheet: blur + opak cam dolgu, 28 köşe, tutma çubuğu.
+ * Klavye açılınca sheet klavyenin üstünde kalır (Android'de de).
+ */
 export function SolidSheet({ children, topPadding = spacing.lg }: SolidSheetProps) {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
+  const material = glassMaterial(theme, 'sheet');
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const { height: windowHeight } = useWindowDimensions();
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
+
+  // Klavye açıkken sheet'in üst sınırı: kalan alanı aşarsa başlık ve
+  // arama kutusu ekran dışında kalır. Klavye yüksekliğine göre sınırla.
+  const sheetMaxHeight =
+    keyboardHeight > 0
+      ? Math.max(260, windowHeight - keyboardHeight - insets.top - spacing.lg)
+      : '88%';
 
   return (
     <KeyboardAvoidingView
@@ -25,14 +66,27 @@ export function SolidSheet({ children, topPadding = spacing.lg }: SolidSheetProp
         style={[
           styles.sheet,
           {
-            backgroundColor: theme.surface,
-            borderColor: theme.line,
+            backgroundColor: material.fallbackFill,
+            borderColor: material.border,
             paddingTop: topPadding,
             paddingBottom: insets.bottom + spacing.md,
+            // Klavye açıkken sheet'i klavyenin üstüne kaldır.
+            // iOS'ta KeyboardAvoidingView padding halleder; Android modal
+            // penceresi resize olmadığı için manuel kaldırma gerekir.
+            marginBottom: Platform.OS === 'android' ? keyboardHeight : 0,
+            maxHeight: sheetMaxHeight,
           },
         ]}
       >
-        <View style={[styles.handle, { backgroundColor: theme.line }]} />
+        <BlurView
+          intensity={50}
+          tint={theme.isDark ? 'dark' : 'light'}
+          blurMethod={ANDROID_BLUR_METHOD}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.handleWrap} pointerEvents="none">
+          <View style={[styles.handle, { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.3)' : 'rgba(20,40,70,0.2)' }]} />
+        </View>
         <View style={styles.content}>{children}</View>
       </View>
     </KeyboardAvoidingView>
@@ -45,19 +99,20 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    borderTopLeftRadius: radius.card,
-    borderTopRightRadius: radius.card,
-    borderWidth: BORDER_WIDTH,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    borderWidth: 1,
     borderBottomWidth: 0,
-    maxHeight: '88%',
+    overflow: 'hidden',
+  },
+  handleWrap: {
+    alignItems: 'center',
+    paddingBottom: spacing.sm,
   },
   handle: {
-    alignSelf: 'center',
-    width: 36,
+    width: 40,
     height: 4,
     borderRadius: 2,
-    marginBottom: spacing.sm,
-    opacity: 0.45,
   },
   content: {
     flexShrink: 1,

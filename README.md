@@ -90,19 +90,23 @@ ne-giysem/
 │  ├─ _layout.tsx          # font + onay kapısı + WeatherProvider + Stack
 │  ├─ karsilama.tsx        # 4 adımlı onaylı karşılama
 │  ├─ sehir-ara.tsx        # şehir arama modalı (transparentModal)
-│  ├─ (tabs)/              # Bugün, Hafta, Uyarılar, Ayarlar + PillTabBar
+│  ├─ (tabs)/              # Bugün, Hafta, Uyarılar, Ayarlar + FloatingTabBar
 │  └─ ayarlar/             # usume, konumlar, bildirimler
 ├─ src/
-│  ├─ components/          # Surface, TagCard, SolidSheet, SolidButton, PillTabBar…
-│  ├─ constants/           # config (eşikler, depolama anahtarları), officialSources
-│  ├─ hooks/               # useWeatherOutfit, useWeatherContext, useProfile, useDailyReminder
+│  ├─ components/          # glass/ (Glass, GlassButton, GlassChip, GlassInput, GlassSegmented,
+│  │                       #   IconBadge, ScreenBackground), FloatingTabBar, DayRow, sheets…
+│  ├─ constants/           # config (eşikler, depolama anahtarları), officialSources, widget
+│  ├─ hooks/               # useWeatherOutfit, useWeatherContext, useProfile, useDailyReminder, useTabFade
 │  ├─ i18n/                # tr.json, en.json
-│  ├─ logic/               # outfitEngine, slots, effectiveTemp, consent, notifications
+│  ├─ logic/               # outfitEngine, slots, effectiveTemp, consent, notifications, widgetContent
 │  ├─ services/            # weather (Open-Meteo), geocoding, location, http, notifications
 │  ├─ storage/             # cache, consent, profileStore (AsyncStorage)
 │  ├─ theme/               # tokens (palet), typography, spacing, useAppTheme
+│  ├─ widgets/             # Android widget'ları (küçük/orta), taskHandler, ikon SVG'leri
 │  └─ types/index.ts
+├─ index.ts                # giriş: expo-router/entry + registerWidgetTaskHandler
 ├─ scripts/checkContrast.ts
+├─ scripts/generate-widget-icons.mjs  # widget SVG ikonlarını Phosphor'dan üretir
 ├─ docs/V2-YONERGE.md
 └─ __tests__/              # motor + onay + bildirim testleri
 ```
@@ -124,6 +128,31 @@ gösterilir. Uydurma veri üretilmez.
   kontrast `npm run check:contrast` ile doğrulanır; karşılama `useReducedMotion` destekler.
 - **Bildirimler:** `expo-notifications` native modül içerir — tam doğrulama için
   development build veya EAS preview APK gerekir (Expo Go'da sınırlı).
+- **Tasarım:** Tek "Liquid Glass" malzemesi `src/theme/glass.ts` token'larından gelir
+  (`Glass` varyantları: surface/chip/pill/sheet/input). Zemin `ScreenBackground`'da
+  hava + gün/gece gradyanı + 3 yumuşak ışık küresi; üstte durum çubuğu scrim'i.
+  Gerçek `BlurView` yalnızca sekme çubuğu, hero kart ve sheet'lerde; diğer kartlar
+  yarı saydam dolgu + kenarlık (blur'suz). Kıyafet ikon eşlemesi `src/logic/itemIcons.ts`,
+  satır gruplama `src/logic/outfitGrouping.ts` (ikisi de testli).
+- **Android widget'ları:** `react-native-android-widget` native modül içerir —
+  yalnızca development build / EAS APK'da çalışır, Expo Go'da görünmez.
+  - İki widget: **Küçük (2×2)** ve **Orta (4×2)**; ikisi de yeniden boyutlandırılabilir,
+    `updatePeriodMillis` 30 dk (Android alt sınırı).
+  - Veri: uygulamanın AsyncStorage önbelleği + Open-Meteo; ≤30 dk taze önbellek
+    doğrudan kullanılır, değilse Open-Meteo'dan yenilenir, olmazsa bayat veri
+    "Güncel değil · SS:DD" etiketiyle gösterilir. 3 saatten eski veriyle öneri
+    iddiası gösterilmez. Onay veya kayıtlı konum yoksa "Başlamak için dokun".
+  - Dokunma uygulamayı açar (`OPEN_APP`); uygulama her başarılı hava durumu
+    yenilemesinde `requestWidgetUpdate` ile widget'ları anında tazeler.
+  - Palet konumun `is_day` değerine göre gündüz/gece seçilir; RemoteViews blur
+    desteklemediği için düz yarı opak gradyan kullanılır.
+  - Widget ikonları `scripts/generate-widget-icons.mjs` ile Phosphor defs'ten
+    üretilir (`src/widgets/icons.ts` — elle düzenlemeyin).
+  - Önizleme görseli eklenmedi; widget seçicide kütüphane varsayılanı görünür.
+    Eklemek isterseniz `app.config.ts` içindeki `previewImage` alanına
+    `assets/widget-preview/*.png` yolu verin.
+  - Ekleme: ana ekranda boş alana uzun bas → Widget'lar → "Ne Giysem?" (Ayarlar'da
+    adım adım yardım da var).
 
 ## Sorun giderme
 

@@ -17,10 +17,13 @@ import {
   setLearnedOffset,
   setNotifEnabled,
   setNotifSchedule,
+  setWidgetBg,
   toOutfitProfile,
   type NotificationPeriod,
   type StoredProfile,
+  type WidgetBgMode,
 } from '@/storage/profileStore';
+import { pushWidgetUpdate } from '@/widgets/resolveWidgetData';
 import type { ColdSensitivity, OutfitProfile, Place } from '@/types';
 
 /**
@@ -36,6 +39,7 @@ interface ProfileContextValue {
   setLearnedOffset: (value: number) => Promise<void>;
   setNotifEnabled: (value: boolean) => Promise<void>;
   setNotifSchedule: (period: NotificationPeriod, hour: number, minute: number) => Promise<void>;
+  setWidgetBg: (value: WidgetBgMode) => Promise<void>;
   addCity: (place: Place) => Promise<void>;
   removeCity: (place: Place) => Promise<void>;
   /** Tüm profil verilerini varsayılanlara sıfırlar. */
@@ -66,9 +70,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       outfitProfile: toOutfitProfile(profile),
       setColdSensitivity: async (cold) => {
         setProfile(await setColdSensitivity(cold));
+        void pushWidgetUpdate();
       },
       setLearnedOffset: async (offset) => {
         setProfile(await setLearnedOffset(offset));
+        void pushWidgetUpdate();
+      },
+      setWidgetBg: async (mode) => {
+        setProfile(await setWidgetBg(mode));
+        void pushWidgetUpdate();
       },
       setNotifEnabled: async (enabled) => {
         setProfile(await setNotifEnabled(enabled));
@@ -105,12 +115,14 @@ export function useProfile(): ProfileContextValue {
         notifPeriod: 'aksam',
         notifHour: 21,
         notifMinute: 0,
+        widgetBg: 'solid',
       },
       outfitProfile: { coldSensitivity: 'normal', transport: 'walk', learnedOffset: 0 },
       setColdSensitivity: async () => undefined,
       setLearnedOffset: async () => undefined,
       setNotifEnabled: async () => undefined,
       setNotifSchedule: async () => undefined,
+      setWidgetBg: async () => undefined,
       addCity: async () => undefined,
       removeCity: async () => undefined,
       resetProfile: async () => undefined,

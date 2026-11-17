@@ -15,10 +15,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Screen } from '@/components/Screen';
-import { SegmentedControl } from '@/components/SegmentedControl';
+import { Glass, GlassButton, ScreenBackground } from '@/components/glass';
 import { SheetModal } from '@/components/SheetModal';
-import { SolidButton } from '@/components/SolidButton';
+import { TimeWheel } from '@/components/TimeWheel';
 import { WeatherIcon } from '@/components/WeatherIcon';
 import { useProfile } from '@/hooks/useProfile';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
@@ -27,9 +26,14 @@ import { acceptConsent } from '@/storage/consent';
 import { setOnboardingDone } from '@/storage/cache';
 import { requestNotificationPermission } from '@/services/notificationService';
 import { useAppTheme } from '@/theme/useAppTheme';
-import { BORDER_WIDTH, MIN_TOUCH_SIZE, radius, spacing } from '@/theme/spacing';
+import { BORDER_WIDTH, MIN_TOUCH_SIZE, spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 import type { NotificationPeriod } from '@/storage/profileStore';
+
+/** Hatırlatma dönemi: 12'den önce → bugünün, sonra → yarının kombini. */
+function periodForHour(hour: number): NotificationPeriod {
+  return hour < 12 ? 'sabah' : 'aksam';
+}
 
 const STEP_COUNT = 4;
 
@@ -54,8 +58,8 @@ export default function WelcomeScreen() {
   const [locationFailed, setLocationFailed] = useState(false);
   const [awaitingPlace, setAwaitingPlace] = useState(false);
   const [notifOn, setNotifOn] = useState(false);
-  const [notifPeriod, setNotifPeriod] = useState<NotificationPeriod>('aksam');
   const [notifHour, setNotifHour] = useState(21);
+  const [notifMinute, setNotifMinute] = useState(0);
   const [busy, setBusy] = useState(false);
 
   const goTo = (next: number): void => {
@@ -107,7 +111,7 @@ export default function WelcomeScreen() {
     setBusy(true);
     try {
       if (enableNotif && notifOn) {
-        await setNotifSchedule(notifPeriod, notifHour, 0);
+        await setNotifSchedule(periodForHour(notifHour), notifHour, notifMinute);
         await setNotifEnabled(true);
       } else {
         await setNotifEnabled(false);
@@ -157,7 +161,7 @@ export default function WelcomeScreen() {
   );
 
   return (
-    <Screen>
+    <ScreenBackground kind="partly" isDay={!theme.isDark}>
       <View style={[styles.root, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.lg }]}>
         {stepHeader}
         <ScrollView
@@ -179,7 +183,7 @@ export default function WelcomeScreen() {
                 {t('ob.welcomeSubtitle')}
               </Text>
               <View style={styles.actions}>
-                <SolidButton label={t('ob.start')} onPress={() => goTo(1)} />
+                <GlassButton label={t('ob.start')} onPress={() => goTo(1)} />
               </View>
             </Animated.View>
           ) : null}
@@ -225,11 +229,11 @@ export default function WelcomeScreen() {
                   <Text style={[typography.body, { color: theme.text }]} maxFontSizeMultiplier={1.3}>
                     {t('ob.declineMsg')}
                   </Text>
-                  <SolidButton label={t('common.back')} variant="secondary" onPress={() => { setDeclined(false); goTo(0); }} />
+                  <GlassButton label={t('common.back')} variant="secondary" onPress={() => { setDeclined(false); goTo(0); }} />
                 </View>
               ) : (
                 <View style={styles.actions}>
-                  <SolidButton
+                  <GlassButton
                     label={t('common.next')}
                     disabled={!consentChecked}
                     onPress={() => {
@@ -237,7 +241,7 @@ export default function WelcomeScreen() {
                       goTo(2);
                     }}
                   />
-                  <SolidButton
+                  <GlassButton
                     label={t('ob.decline')}
                     variant="secondary"
                     onPress={() => setDeclined(true)}
@@ -259,12 +263,12 @@ export default function WelcomeScreen() {
                 <Text style={[typography.caption, { color: theme.text }]}>{t('error.location')}</Text>
               ) : null}
               <View style={styles.actions}>
-                <SolidButton
+                <GlassButton
                   label={t('ob.useLocation')}
                   disabled={locationBusy}
                   onPress={() => void handleUseLocation()}
                 />
-                <SolidButton
+                <GlassButton
                   label={t('ob.pickCity')}
                   variant="secondary"
                   onPress={() => {
@@ -272,9 +276,6 @@ export default function WelcomeScreen() {
                     router.push('/sehir-ara');
                   }}
                 />
-                <Pressable onPress={() => void finish(false)} style={styles.skip} accessibilityRole="button">
-                  <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('ob.skipForNow')}</Text>
-                </Pressable>
               </View>
             </Animated.View>
           ) : null}
@@ -287,7 +288,7 @@ export default function WelcomeScreen() {
               <Text style={[typography.body, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
                 {t('ob.notifBody')}
               </Text>
-              <View style={[styles.notifCard, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+              <Glass>
                 <View style={styles.notifRow}>
                   <Text style={[typography.body, { color: theme.text }]}>{t('ob.notifToggle')}</Text>
                   <Switch
@@ -300,42 +301,21 @@ export default function WelcomeScreen() {
                 </View>
                 {notifOn ? (
                   <>
-                    <SegmentedControl
-                      options={[
-                        { value: 'sabah' as NotificationPeriod, label: t('notif.periodMorning') },
-                        { value: 'aksam' as NotificationPeriod, label: t('notif.periodEvening') },
-                      ]}
-                      value={notifPeriod}
-                      onChange={setNotifPeriod}
+                    <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('ob.notifTime')}</Text>
+                    <TimeWheel
+                      hour={notifHour}
+                      minute={notifMinute}
+                      onChange={(h, m) => {
+                        setNotifHour(h);
+                        setNotifMinute(m);
+                      }}
                     />
-                    <View style={styles.timeRow}>
-                      <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('ob.notifTime')}</Text>
-                      <View style={styles.stepper}>
-                        <Pressable
-                          onPress={() => setNotifHour((h) => (h + 23) % 24)}
-                          accessibilityRole="button"
-                          style={[styles.stepperButton, { borderColor: theme.line }]}
-                        >
-                          <Text style={[typography.titleS, { color: theme.text }]}>−</Text>
-                        </Pressable>
-                        <Text style={[typography.titleS, { color: theme.text }]}>
-                          {`${String(notifHour).padStart(2, '0')}:00`}
-                        </Text>
-                        <Pressable
-                          onPress={() => setNotifHour((h) => (h + 1) % 24)}
-                          accessibilityRole="button"
-                          style={[styles.stepperButton, { borderColor: theme.line }]}
-                        >
-                          <Text style={[typography.titleS, { color: theme.text }]}>+</Text>
-                        </Pressable>
-                      </View>
-                    </View>
                   </>
                 ) : null}
-              </View>
+              </Glass>
               <View style={styles.actions}>
-                <SolidButton label={t('ob.finish')} disabled={busy} onPress={() => void finish(notifOn)} />
-                <SolidButton label={t('ob.notNow')} variant="secondary" disabled={busy} onPress={() => void finish(false)} />
+                <GlassButton label={t('ob.finish')} disabled={busy} onPress={() => void finish(notifOn)} />
+                <GlassButton label={t('ob.notNow')} variant="secondary" disabled={busy} onPress={() => void finish(false)} />
               </View>
             </Animated.View>
           ) : null}
@@ -349,7 +329,7 @@ export default function WelcomeScreen() {
           </Text>
         </ScrollView>
       </SheetModal>
-    </Screen>
+    </ScreenBackground>
   );
 }
 
@@ -443,40 +423,10 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     marginTop: spacing.sm,
   },
-  skip: {
-    minHeight: MIN_TOUCH_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  notifCard: {
-    borderRadius: radius.card,
-    borderWidth: BORDER_WIDTH,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
   notifRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: MIN_TOUCH_SIZE,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  stepperButton: {
-    width: MIN_TOUCH_SIZE,
-    height: MIN_TOUCH_SIZE,
-    borderRadius: radius.pill,
-    borderWidth: BORDER_WIDTH,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

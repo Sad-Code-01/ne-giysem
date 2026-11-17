@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import { SolidSheet } from '@/components/SolidSheet';
+import { Glass, GlassInput } from '@/components/glass';
 import { MIN_SEARCH_LENGTH, SEARCH_DEBOUNCE_MS } from '@/constants/config';
 import { useProfile } from '@/hooks/useProfile';
 import { t } from '@/i18n';
@@ -26,7 +27,7 @@ import type { Place } from '@/types';
 
 /**
  * Şehir arama içeriği — `app/sehir-ara.tsx` modal rotası tarafından çizilir.
- * Cam SolidSheet, klavye duyarlı, autoFocus, 300ms debounce.
+ * Cam SolidSheet (klavye üstünde kalır), 400ms debounce, istek iptali.
  */
 export function CitySearchSheet() {
   const theme = useAppTheme();
@@ -64,7 +65,7 @@ export function CitySearchSheet() {
     setIsSearching(text.trim().length >= MIN_SEARCH_LENGTH);
   };
 
-  // Geciktirilmiş arama (debounce).
+  // Geciktirilmiş arama (debounce) + eski istekleri iptal et.
   useEffect(() => {
     if (trimmed.length < MIN_SEARCH_LENGTH) return;
 
@@ -110,7 +111,7 @@ export function CitySearchSheet() {
   if (isSearching) {
     body = (
       <View style={styles.state}>
-        <ActivityIndicator color={theme.primary} />
+        <ActivityIndicator color={theme.tabActive} />
         <Text style={[typography.body, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.4}>
           {t('search.loading')}
         </Text>
@@ -157,7 +158,7 @@ export function CitySearchSheet() {
         keyboardShouldPersistTaps="handled"
         keyExtractor={(item) => `${item.name}-${item.latitude}-${item.longitude}`}
         ItemSeparatorComponent={() => (
-          <View style={[styles.separator, { backgroundColor: theme.line, opacity: 0.25 }]} />
+          <View style={[styles.separator, { backgroundColor: 'rgba(120,140,165,0.25)' }]} />
         )}
         renderItem={({ item }) => {
           const secondary = item.region || item.country;
@@ -166,9 +167,11 @@ export function CitySearchSheet() {
               onPress={() => handleSelect(item)}
               accessibilityRole="button"
               accessibilityLabel={secondary ? `${item.name}, ${secondary}` : item.name}
-              style={({ pressed }) => [styles.row, { opacity: pressed ? 0.7 : 1 }]}
+              style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
             >
-              <MapPin size={18} color={theme.textSecondary} weight="regular" />
+              <Glass variant="chip" cornerRadius={radius.pill} padded={false} contentStyle={styles.rowBadge}>
+                <MapPin size={16} color={theme.tabActive} weight="regular" />
+              </Glass>
               <View style={styles.rowText}>
                 <Text
                   style={[typography.body, { color: theme.text }]}
@@ -195,23 +198,17 @@ export function CitySearchSheet() {
   }
 
   return (
-    <SolidSheet>
-      {/* Tutamaç */}
-      <View style={styles.handleRow}>
-        <View style={[styles.handle, { backgroundColor: 'rgba(255,255,255,0.28)' }]} />
-      </View>
-
+    <SolidSheet topPadding={spacing.lg}>
       {/* Başlık + kapat */}
       <View style={styles.headerRow}>
         <Text
-          style={[typography.titleM, { color: theme.text }]}
+          style={[typography.titleM, { color: theme.text, fontSize: 22, lineHeight: 28 }]}
           maxFontSizeMultiplier={1.2}
         >
           {t('search.title')}
         </Text>
         <Pressable
           onPress={handleClose}
-          hitSlop={10}
           accessibilityRole="button"
           accessibilityLabel={t('common.close')}
           style={styles.closeButton}
@@ -221,36 +218,15 @@ export function CitySearchSheet() {
       </View>
 
       {/* Arama alanı — her zaman görünür */}
-      <View
-        style={[
-          styles.inputBox,
-          { backgroundColor: theme.bg, borderColor: theme.line },
-        ]}
-      >
-        <MagnifyingGlass size={18} color={theme.textSecondary} weight="regular" />
-        <TextInput
-          ref={inputRef}
-          value={query}
-          onChangeText={handleChangeText}
-          placeholder={t('search.placeholder')}
-          placeholderTextColor={theme.textSecondary}
-          autoCorrect={false}
-          autoCapitalize="words"
-          returnKeyType="search"
-          maxFontSizeMultiplier={1.3}
-          style={[typography.body, styles.input, { color: theme.text }]}
-        />
-        {query.length > 0 ? (
-          <Pressable
-            onPress={() => handleChangeText('')}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel={t('search.clear')}
-          >
-            <X size={18} color={theme.textSecondary} weight="regular" />
-          </Pressable>
-        ) : null}
-      </View>
+      <GlassInput
+        inputRef={inputRef}
+        value={query}
+        onChangeText={handleChangeText}
+        placeholder={t('search.placeholder')}
+        icon={MagnifyingGlass}
+        onClear={() => handleChangeText('')}
+        clearLabel={t('search.clear')}
+      />
 
       {body}
     </SolidSheet>
@@ -258,19 +234,11 @@ export function CitySearchSheet() {
 }
 
 const styles = StyleSheet.create({
-  handleRow: {
-    alignItems: 'center',
-    paddingBottom: spacing.sm,
-  },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-  },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: spacing.xl - 4,
     marginBottom: spacing.md,
   },
   closeButton: {
@@ -278,20 +246,6 @@ const styles = StyleSheet.create({
     height: MIN_TOUCH_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  inputBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderWidth: 1,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    minHeight: MIN_TOUCH_SIZE,
-    marginBottom: spacing.md,
-  },
-  input: {
-    flex: 1,
-    paddingVertical: spacing.sm,
   },
   state: {
     alignItems: 'center',
@@ -307,14 +261,25 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    minHeight: MIN_TOUCH_SIZE,
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: 56,
+  },
+  rowPressed: {
+    opacity: 0.7,
+  },
+  rowBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rowText: {
     flexShrink: 1,
   },
   separator: {
     height: 1,
+    marginLeft: 52,
   },
 });

@@ -13,15 +13,13 @@ import {
   Wind,
   type Icon,
 } from 'phosphor-react-native';
-import { StyleSheet, View } from 'react-native';
 
-import { Chip } from '@/components/Chip';
 import { t } from '@/i18n';
-import { spacing } from '@/theme/spacing';
 
 /**
- * Uyarı metni → ikon eşlemesi. Metinler i18n'den geldiği için
- * her iki dilde de `t()` ile karşılaştırılır; eşleşme yoksa Info.
+ * Uyarı metni → ikon eşlemesi (saf fonksiyon; `WarningChips` ve
+ * Bugün ekranındaki çipler ortak kullanır).
+ * Metinler i18n'den geldiği için her iki dilde de `t()` ile karşılaştırılır.
  */
 const WARNING_ICONS: readonly { key: string; icon: Icon }[] = [
   { key: 'outfit.umbrella', icon: Umbrella },
@@ -38,34 +36,9 @@ const WARNING_ICONS: readonly { key: string; icon: Icon }[] = [
   { key: 'outfit.dailyNote', icon: Lightbulb },
 ];
 
-function iconFor(warning: string): Icon {
+export function warningIcon(warning: string): Icon {
   for (const entry of WARNING_ICONS) {
     if (warning === t(entry.key)) return entry.icon;
   }
   return Info;
 }
-
-interface WarningChipsProps {
-  warnings: string[];
-}
-
-/** Uyarıları yatay sarılan amber çipler olarak gösterir. */
-export function WarningChips({ warnings }: WarningChipsProps) {
-  if (warnings.length === 0) return null;
-
-  return (
-    <View style={styles.wrap}>
-      {warnings.map((warning) => (
-        <Chip key={warning} label={warning} icon={iconFor(warning)} tone="amber" />
-      ))}
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-});

@@ -12,6 +12,9 @@ const PROFILE_KEY = 'negiysem:profile:v1';
 
 export type NotificationPeriod = 'sabah' | 'aksam';
 
+/** Widget arka plan saydamlığı: 'solid' dolu, 'translucent' yarı saydam, 'clear' çok saydam. */
+export type WidgetBgMode = 'solid' | 'translucent' | 'clear';
+
 export interface StoredProfile {
   coldSensitivity: ColdSensitivity;
   /** Öğrenilen ofset, −3…+3. */
@@ -23,6 +26,8 @@ export interface StoredProfile {
   notifPeriod: NotificationPeriod;
   notifHour: number;
   notifMinute: number;
+  /** Widget arka plan saydamlığı. */
+  widgetBg: WidgetBgMode;
 }
 
 export const DEFAULT_STORED_PROFILE: StoredProfile = {
@@ -33,10 +38,12 @@ export const DEFAULT_STORED_PROFILE: StoredProfile = {
   notifPeriod: NOTIFICATION_DEFAULTS.period,
   notifHour: NOTIFICATION_DEFAULTS.hour,
   notifMinute: NOTIFICATION_DEFAULTS.minute,
+  widgetBg: 'solid',
 };
 
 const COLD_SENSITIVITIES: readonly ColdSensitivity[] = ['none', 'little', 'normal', 'quick', 'very'];
 const NOTIF_PERIODS: readonly NotificationPeriod[] = ['sabah', 'aksam'];
+const WIDGET_BG_MODES: readonly WidgetBgMode[] = ['solid', 'translucent', 'clear'];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -90,6 +97,9 @@ function sanitize(raw: unknown): StoredProfile {
       : DEFAULT_STORED_PROFILE.notifPeriod,
     notifHour: clampHour(raw.notifHour),
     notifMinute: clampMinute(raw.notifMinute),
+    widgetBg: WIDGET_BG_MODES.includes(raw.widgetBg as WidgetBgMode)
+      ? (raw.widgetBg as WidgetBgMode)
+      : DEFAULT_STORED_PROFILE.widgetBg,
   };
 }
 
@@ -151,6 +161,13 @@ export async function setNotifSchedule(
     notifHour: clampHour(hour),
     notifMinute: clampMinute(minute),
   };
+  await save(next);
+  return next;
+}
+
+export async function setWidgetBg(value: WidgetBgMode): Promise<StoredProfile> {
+  const profile = await getStoredProfile();
+  const next = { ...profile, widgetBg: value };
   await save(next);
   return next;
 }

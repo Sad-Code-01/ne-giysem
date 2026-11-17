@@ -1,24 +1,38 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { SegmentedControl } from '@/components/SegmentedControl';
-import { Screen } from '@/components/Screen';
+import { Glass, GlassButton, ScreenBackground } from '@/components/glass';
 import { SettingsHeader } from '@/components/SettingsHeader';
+import { TimeWheel } from '@/components/TimeWheel';
 import { useProfile } from '@/hooks/useProfile';
-import { requestNotificationPermission } from '@/services/notificationService';
+import { nextTriggerDate } from '@/logic/notifications';
+import {
+  requestNotificationPermission,
+  sendTestNotification,
+} from '@/services/notificationService';
 import { t } from '@/i18n';
 import { useAppTheme } from '@/theme/useAppTheme';
-import { BORDER_WIDTH, MIN_TOUCH_SIZE, radius, spacing } from '@/theme/spacing';
+import { MIN_TOUCH_SIZE, spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 import type { NotificationPeriod } from '@/storage/profileStore';
 
-/** Bildirim ayarları: aç/kapa, sabah/akşam, saat. */
+/** Hatırlatma dönemi: sabah → bugünün, akşam → yarının kombini. Saat 12'den önceyse sabah sayılır. */
+function periodForHour(hour: number): NotificationPeriod {
+  return hour < 12 ? 'sabah' : 'aksam';
+}
+
+function pad2(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+/** Bildirim ayarları: aç/kapa, 24 saat wheel ile saat+dakika, test bildirimi. */
 export default function NotificationSettingsScreen() {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
   const { profile, setNotifEnabled, setNotifSchedule } = useProfile();
   const [denied, setDenied] = useState(false);
+  const [testState, setTestState] = useState<'idle' | 'sent' | 'failed'>('idle');
 
   const handleToggle = async (value: boolean): Promise<void> => {
     if (value) {
@@ -32,8 +46,20 @@ export default function NotificationSettingsScreen() {
     await setNotifEnabled(value);
   };
 
+  const handleTimeChange = (hour: number, minute: number): void => {
+    void setNotifSchedule(periodForHour(hour), hour, minute);
+  };
+
+  const handleTest = async (): Promise<void> => {
+    const ok = await sendTestNotification();
+    setTestState(ok ? 'sent' : 'failed');
+  };
+
+  const nextAt = nextTriggerDate(profile.notifHour, profile.notifMinute);
+  const nextLabel = `${pad2(nextAt.getDate())}.${pad2(nextAt.getMonth() + 1)} ${pad2(nextAt.getHours())}:${pad2(nextAt.getMinutes())}`;
+
   return (
-    <Screen>
+    <ScreenBackground kind="partly" isDay={!theme.isDark}>
       <SettingsHeader title={t('settings.notifTitle')} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]}
@@ -43,7 +69,7 @@ export default function NotificationSettingsScreen() {
           {t('settings.notifSubtitle')}
         </Text>
 
-        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+        <Glass>
           <View style={styles.row}>
             <Text style={[typography.body, { color: theme.text, flex: 1 }]}>{t('ob.notifToggle')}</Text>
             <Switch
@@ -57,51 +83,41 @@ export default function NotificationSettingsScreen() {
 
           {profile.notifEnabled ? (
             <>
-              <SegmentedControl
-                options={[
-                  { value: 'sabah' as NotificationPeriod, label: t('notif.periodMorning') },
-                  { value: 'aksam' as NotificationPeriod, label: t('notif.periodEvening') },
-                ]}
-                value={profile.notifPeriod}
-                onChange={(period) => void setNotifSchedule(period, profile.notifHour, profile.notifMinute)}
+              <View style={styles.divider} />
+              <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('ob.notifTime')}</Text>
+              <TimeWheel
+                hour={profile.notifHour}
+                minute={profile.notifMinute}
+                onChange={handleTimeChange}
               />
-              <View style={styles.timeRow}>
-                <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('ob.notifTime')}</Text>
-                <View style={styles.stepper}>
-                  <Pressable
-                    onPress={() =>
-                      void setNotifSchedule(
-                        profile.notifPeriod,
-                        (profile.notifHour + 23) % 24,
-                        profile.notifMinute
-                      )
-                    }
-                    accessibilityRole="button"
-                    style={[styles.stepperButton, { borderColor: theme.line }]}
-                  >
-                    <Text style={[typography.titleS, { color: theme.text }]}>−</Text>
-                  </Pressable>
-                  <Text style={[typography.titleS, { color: theme.text }]}>
-                    {`${String(profile.notifHour).padStart(2, '0')}:${String(profile.notifMinute).padStart(2, '0')}`}
-                  </Text>
-                  <Pressable
-                    onPress={() =>
-                      void setNotifSchedule(
-                        profile.notifPeriod,
-                        (profile.notifHour + 1) % 24,
-                        profile.notifMinute
-                      )
-                    }
-                    accessibilityRole="button"
-                    style={[styles.stepperButton, { borderColor: theme.line }]}
-                  >
-                    <Text style={[typography.titleS, { color: theme.text }]}>+</Text>
-                  </Pressable>
-                </View>
-              </View>
+              <Text style={[typography.micro, { color: theme.textSecondary }]}>
+                {t('settings.notifNext', { time: nextLabel })}
+              </Text>
             </>
           ) : null}
-        </View>
+        </Glass>
+
+        <Glass>
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Text style={[typography.body, { color: theme.text }]}>{t('settings.notifTest')}</Text>
+              <Text style={[typography.micro, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
+                {t('settings.notifTestHint')}
+              </Text>
+            </View>
+            <GlassButton
+              label={t('settings.notifTestSend')}
+              variant="secondary"
+              onPress={() => void handleTest()}
+            />
+          </View>
+          {testState === 'sent' ? (
+            <Text style={[typography.caption, { color: theme.primary }]}>{t('settings.notifTestSent')}</Text>
+          ) : null}
+          {testState === 'failed' ? (
+            <Text style={[typography.caption, { color: theme.text }]}>{t('settings.notifDenied')}</Text>
+          ) : null}
+        </Glass>
 
         {denied ? (
           <Text style={[typography.caption, { color: theme.text }]}>{t('settings.notifDenied')}</Text>
@@ -110,7 +126,7 @@ export default function NotificationSettingsScreen() {
           {t('settings.notifNote')}
         </Text>
       </ScrollView>
-    </Screen>
+    </ScreenBackground>
   );
 }
 
@@ -119,34 +135,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     gap: spacing.md,
   },
-  card: {
-    borderRadius: radius.card,
-    borderWidth: BORDER_WIDTH,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.md,
     minHeight: MIN_TOUCH_SIZE,
   },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  stepperButton: {
-    width: MIN_TOUCH_SIZE,
-    height: MIN_TOUCH_SIZE,
-    borderRadius: radius.pill,
-    borderWidth: BORDER_WIDTH,
-    alignItems: 'center',
-    justifyContent: 'center',
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(127,140,160,0.25)',
   },
 });
