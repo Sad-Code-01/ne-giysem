@@ -101,27 +101,35 @@ function suggestionFromDay(day: DayOutfit): {
   const ogle = day.slots.find((slot) => slot.slot === 'ogle') ?? day.slots[1] ?? day.slots[0];
   const items = ogle?.items ?? [];
 
-  const heroLabel = garmentLabel(day.dayHero);
-  const second = items.find((item) => garmentLabel(item) !== heroLabel);
-  const short = second ? `${heroLabel} + ${garmentLabel(second)}` : heroLabel;
+  // Katman sırası: içten dışa (sweat → kazak → mont). `warmth` düşük olan önce.
+  const ordered = [...items].sort((a, b) => a.warmth - b.warmth);
+  const short = ordered
+    .map(garmentLabel)
+    .filter((label, index, labels) => labels.indexOf(label) === index)
+    .slice(0, 2)
+    .join(' + ');
 
+  const used = new Set<string>();
   const pick = (categories: Garment['category'][]): string => {
-    const matched = items.filter((item) => categories.includes(item.category));
-    const unique = matched.filter(
-      (item, index) => matched.findIndex((other) => other.id === item.id) === index
+    const matched = ordered.filter(
+      (item) => categories.includes(item.category) && !used.has(item.id)
     );
-    return unique.map(garmentLabel).join(' + ');
+    matched.forEach((item) => used.add(item.id));
+    return matched.map(garmentLabel).join(' + ');
   };
 
+  // Katmanlar içten dışa: iç/üst → orta → dış → aksesuar.
   const parts: WidgetSuggestionPart[] = [];
-  const top = pick(['top', 'base', 'mid']);
+  const inner = pick(['base', 'base-bottom', 'top']);
+  const mid = pick(['mid', 'top']);
   const outer = pick(['outer']);
-  const accessory = pick(['accessory', 'shoes', 'bottom', 'base-bottom']);
-  if (top) parts.push({ label: t('widget.partTop'), value: top });
+  const accessory = pick(['accessory', 'shoes', 'bottom']);
+  if (inner) parts.push({ label: t('widget.partInner'), value: inner });
+  if (mid) parts.push({ label: t('widget.partMid'), value: mid });
   if (outer) parts.push({ label: t('widget.partOuter'), value: outer });
   if (accessory) parts.push({ label: t('widget.partAccessory'), value: accessory });
 
-  return { title: day.title, short, parts: parts.slice(0, 3) };
+  return { title: day.title, short, parts: parts.slice(0, 4) };
 }
 
 /**

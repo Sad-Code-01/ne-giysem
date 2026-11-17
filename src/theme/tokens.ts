@@ -29,7 +29,7 @@ export interface AppTheme {
 export const LIGHT_THEME: AppTheme = {
   isDark: false,
   bg: '#EDF3FA',
-  surface: '#FFFFFF',
+  surface: '#F7F9FC',
   primary: '#2F6FED',
   secondary: '#3F6296',
   accent: '#F0A12B',

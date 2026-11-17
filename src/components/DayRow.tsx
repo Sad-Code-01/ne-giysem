@@ -18,6 +18,8 @@ interface DayRowProps {
   dateLabel: string;
   weekMin: number;
   weekMax: number;
+  /** Günün ortalama sıcaklığı (saatlik veriden); gösterilirse çubuğun yanında "Ort." etiketi. */
+  avgTempC?: number | null;
   onPress: () => void;
 }
 
@@ -29,6 +31,7 @@ export function DayRow({
   dateLabel,
   weekMin,
   weekMax,
+  avgTempC,
   onPress,
 }: DayRowProps) {
   const theme = useAppTheme();
@@ -75,10 +78,10 @@ export function DayRow({
           </View>
         </View>
 
-        {/* Sıcaklık aralığı çubuğu */}
+        {/* Sıcaklık aralığı çubuğu + ortalama */}
         {daily ? (
           <View style={styles.trackWrap}>
-            <View style={[styles.track, { backgroundColor: 'rgba(120,140,165,0.22)' }]}>
+            <View style={[styles.track, { backgroundColor: 'rgba(120,140,165,0.22)', flex: 1 }]}>
               <View
                 style={[
                   styles.range,
@@ -90,6 +93,11 @@ export function DayRow({
                 ]}
               />
             </View>
+            {avgTempC != null ? (
+              <Text style={[typography.micro, { color: theme.textSecondary }]}>
+                {`Ort. ${Math.round(avgTempC)}°`}
+              </Text>
+            ) : null}
           </View>
         ) : null}
 
@@ -130,6 +138,9 @@ const styles = StyleSheet.create({
   },
   trackWrap: {
     marginTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   track: {
     height: 6,

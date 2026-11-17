@@ -1,7 +1,8 @@
+import { Check } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, View, ActivityIndicator } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -26,16 +27,34 @@ import { acceptConsent } from '@/storage/consent';
 import { setOnboardingDone } from '@/storage/cache';
 import { requestNotificationPermission } from '@/services/notificationService';
 import { useAppTheme } from '@/theme/useAppTheme';
-import { BORDER_WIDTH, MIN_TOUCH_SIZE, spacing } from '@/theme/spacing';
+import { BORDER_WIDTH, MIN_TOUCH_SIZE, radius, spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
 import type { NotificationPeriod } from '@/storage/profileStore';
+import type { ColdSensitivity, ServiceErrorKind } from '@/types';
+
+/** Konum adımında hata türüne göre gösterilecek açıklama anahtarı. */
+const LOCATION_ERROR_KEYS: Record<ServiceErrorKind, string> = {
+  permission: 'error.permissionMsg',
+  location: 'error.locationMsg',
+  offline: 'error.offlineMsg',
+  api: 'error.apiMsg',
+  parse: 'error.parseMsg',
+};
 
 /** Hatırlatma dönemi: 12'den önce → bugünün, sonra → yarının kombini. */
 function periodForHour(hour: number): NotificationPeriod {
   return hour < 12 ? 'sabah' : 'aksam';
 }
 
-const STEP_COUNT = 4;
+const COLD_OPTIONS: readonly { value: ColdSensitivity; key: string }[] = [
+  { value: 'none', key: 'cold.none' },
+  { value: 'little', key: 'cold.little' },
+  { value: 'normal', key: 'cold.normal' },
+  { value: 'quick', key: 'cold.quick' },
+  { value: 'very', key: 'cold.very' },
+];
+
+const STEP_COUNT = 5;
 
 function progressLabel(step: number): string {
   return `${step + 1}/${STEP_COUNT}`;
@@ -47,19 +66,23 @@ export default function WelcomeScreen() {
   const theme = useAppTheme();
   const router = useRouter();
   const reduceMotion = useReducedMotion();
-  const { status, start: startWeather, loadMyLocation } = useWeatherContext();
-  const { setNotifEnabled, setNotifSchedule } = useProfile();
+  const { status, snapshot, errorKind, isOffline, start: startWeather, loadMyLocation } =
+    useWeatherContext();
+  const { profile, setColdSensitivity, setNotifEnabled, setNotifSchedule } = useProfile();
 
   const [step, setStep] = useState(0);
   const [consentChecked, setConsentChecked] = useState(false);
   const [declined, setDeclined] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [locationBusy, setLocationBusy] = useState(false);
-  const [locationFailed, setLocationFailed] = useState(false);
   const [awaitingPlace, setAwaitingPlace] = useState(false);
+  // Konum isteğinin zamanı: yalnızca bu istekten SONRA gelen veri onay ekranını açar.
+  const [placeRequestedAt, setPlaceRequestedAt] = useState(0);
   const [notifOn, setNotifOn] = useState(false);
   const [notifHour, setNotifHour] = useState(21);
   const [notifMinute, setNotifMinute] = useState(0);
+  // null → profildeki kayıtlı değer kullanılır; seçim yapılınca üzerine yazılır.
+  const [coldChoice, setColdChoice] = useState<ColdSensitivity | null>(null);
   const [busy, setBusy] = useState(false);
 
   const goTo = (next: number): void => {
@@ -67,30 +90,32 @@ export default function WelcomeScreen() {
     setStep(next);
   };
 
-  // Konum adımında kullanıcı konum/şehir seçimini başlattıysa ve veri
-  // hazırsa bildirim adımına geç; hata olursa kullanıcıya göster.
-  // (Geri dönülüp tekrar denenebilir — otomatik geçiş yalnızca istek varken.)
-  useEffect(() => {
-    if (step !== 2 || !awaitingPlace) return;
-    // Dış durum (hava akışı) değişimine yanıt; durumu bir sonraki tikte güncelle.
-    const timer = setTimeout(() => {
-      if (status === 'ready') {
-        setAwaitingPlace(false);
-        goTo(3);
-      } else if (status === 'error') {
-        setAwaitingPlace(false);
-        setLocationFailed(true);
-      }
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [status, step, awaitingPlace]);
+  // Konum adımı: istek sonrası gelen ilk TAZE snapshot onay kartını gösterir.
+  // Otomatik ilerleme yok — kullanıcı seçtiği konumu görüp "Devam"a basar.
+  // Bayat önbellek (isOffline) onay sayılmaz; hata mesajı da gösterilir.
+  const placeReady =
+    awaitingPlace &&
+    status === 'ready' &&
+    !isOffline &&
+    snapshot != null &&
+    snapshot.fetchedAt >= placeRequestedAt;
+  // İstek yapıldı ama veri tazelenemedi: hata veya bayat önbellek.
+  const placeFailed =
+    awaitingPlace &&
+    (status === 'error' || (status === 'ready' && isOffline));
+  const locationErrorText = placeFailed
+    ? t(LOCATION_ERROR_KEYS[errorKind ?? 'location'])
+    : null;
 
   const handleUseLocation = async (): Promise<void> => {
     if (locationBusy) return;
     setLocationBusy(true);
-    setLocationFailed(false);
     setAwaitingPlace(true);
+    setPlaceRequestedAt(Date.now());
     try {
+      // Konum akışıyla birlikte günlük hatırlatma iznini de iste —
+      // GPS beklerken diyalog sırada beklemesin diye paralel başlat.
+      void requestNotificationPermission();
       await loadMyLocation();
     } finally {
       setLocationBusy(false);
@@ -110,6 +135,9 @@ export default function WelcomeScreen() {
     if (busy) return;
     setBusy(true);
     try {
+      if (coldChoice) {
+        await setColdSensitivity(coldChoice);
+      }
       if (enableNotif && notifOn) {
         await setNotifSchedule(periodForHour(notifHour), notifHour, notifMinute);
         await setNotifEnabled(true);
@@ -125,9 +153,9 @@ export default function WelcomeScreen() {
   };
 
   const enterAnim = reduceMotion
-    ? FadeIn.duration(200)
-    : SlideInRight.springify().damping(22).stiffness(220);
-  const exitAnim = reduceMotion ? FadeOut.duration(150) : SlideOutLeft.duration(200);
+    ? FadeIn.duration(260)
+    : SlideInRight.springify().damping(30).stiffness(140);
+  const exitAnim = reduceMotion ? FadeOut.duration(200) : SlideOutLeft.duration(260);
 
   const stepHeader = (
     <View style={styles.header}>
@@ -161,7 +189,15 @@ export default function WelcomeScreen() {
   );
 
   return (
-    <ScreenBackground kind="partly" isDay={!theme.isDark}>
+    <ScreenBackground kind="partly">
+      {/* Şeffaf logolu marka filigranı — tüm adımların arkasında */}
+      <Image
+        source={require('../assets/icon.png')}
+        style={styles.bgLogo}
+        resizeMode="contain"
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      />
       <View style={[styles.root, { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.lg }]}>
         {stepHeader}
         <ScrollView
@@ -259,9 +295,44 @@ export default function WelcomeScreen() {
               <Text style={[typography.body, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
                 {t('ob.locationBody')}
               </Text>
-              {locationFailed || status === 'error' ? (
-                <Text style={[typography.caption, { color: theme.text }]}>{t('error.location')}</Text>
+              {locationErrorText ? (
+                <Text style={[typography.caption, { color: theme.text }]}>{locationErrorText}</Text>
               ) : null}
+
+              {placeReady && snapshot ? (
+                <Glass>
+                  <View style={styles.placeReadyRow}>
+                    <View style={styles.placeReadyText}>
+                      <Text style={[typography.micro, { color: theme.textSecondary }]}>
+                        {t('ob.placeReady')}
+                      </Text>
+                      <Text style={[typography.titleS, { color: theme.text }]} numberOfLines={1}>
+                        {snapshot.place.name}
+                      </Text>
+                      {snapshot.place.region ? (
+                        <Text style={[typography.caption, { color: theme.textSecondary }]} numberOfLines={1}>
+                          {snapshot.place.region}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <GlassButton
+                      label={t('common.next')}
+                      onPress={() => {
+                        setAwaitingPlace(false);
+                        goTo(3);
+                      }}
+                    />
+                  </View>
+                </Glass>
+              ) : awaitingPlace && status === 'loading' ? (
+                <View style={styles.locatingRow}>
+                  <ActivityIndicator color={theme.tabActive} />
+                  <Text style={[typography.caption, { color: theme.textSecondary }]}>
+                    {t('ob.locating')}
+                  </Text>
+                </View>
+              ) : null}
+
               <View style={styles.actions}>
                 <GlassButton
                   label={t('ob.useLocation')}
@@ -273,7 +344,8 @@ export default function WelcomeScreen() {
                   variant="secondary"
                   onPress={() => {
                     setAwaitingPlace(true);
-                    router.push('/sehir-ara');
+                    setPlaceRequestedAt(Date.now());
+                    router.push('/sehir-ara?from=onboarding');
                   }}
                 />
               </View>
@@ -282,6 +354,53 @@ export default function WelcomeScreen() {
 
           {step === 3 ? (
             <Animated.View key="s3" entering={enterAnim} exiting={exitAnim} style={styles.step}>
+              <Text style={[typography.titleM, { color: theme.text }]} maxFontSizeMultiplier={1.2}>
+                {t('ob.coldTitle')}
+              </Text>
+              <Text style={[typography.body, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
+                {t('ob.coldBody')}
+              </Text>
+              <View style={styles.coldList}>
+                {COLD_OPTIONS.map((option) => {
+                  const active = (coldChoice ?? profile.coldSensitivity) === option.value;
+                  return (
+                    <Pressable
+                      key={option.value}
+                      onPress={() => {
+                        setColdChoice(option.value);
+                        void Haptics.selectionAsync().catch(() => undefined);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: active }}
+                      style={({ pressed }) => [
+                        styles.coldRow,
+                        {
+                          backgroundColor: active
+                            ? 'rgba(47,111,237,0.12)'
+                            : theme.isDark
+                              ? 'rgba(255,255,255,0.06)'
+                              : 'rgba(255,255,255,0.55)',
+                          borderColor: active ? theme.primary : 'transparent',
+                          opacity: pressed ? 0.8 : 1,
+                        },
+                      ]}
+                    >
+                      <Text style={[typography.body, { color: theme.text, flex: 1 }]}>
+                        {t(option.key)}
+                      </Text>
+                      {active ? <Check size={18} color={theme.primary} weight="bold" /> : null}
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <View style={styles.actions}>
+                <GlassButton label={t('common.next')} onPress={() => goTo(4)} />
+              </View>
+            </Animated.View>
+          ) : null}
+
+          {step === 4 ? (
+            <Animated.View key="s4" entering={enterAnim} exiting={exitAnim} style={styles.step}>
               <Text style={[typography.titleM, { color: theme.text }]} maxFontSizeMultiplier={1.2}>
                 {t('ob.notifTitle')}
               </Text>
@@ -354,6 +473,14 @@ function WelcomeIcon() {
 }
 
 const styles = StyleSheet.create({
+  bgLogo: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: '30%',
+    width: 240,
+    height: 240,
+    opacity: 0.07,
+  },
   root: {
     flex: 1,
     paddingHorizontal: spacing.lg,
@@ -428,5 +555,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: MIN_TOUCH_SIZE,
+  },
+  placeReadyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  placeReadyText: {
+    flex: 1,
+    gap: 2,
+  },
+  locatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: MIN_TOUCH_SIZE,
+  },
+  coldList: {
+    gap: spacing.sm,
+  },
+  coldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderRadius: radius.card,
+    paddingHorizontal: spacing.lg,
+    minHeight: MIN_TOUCH_SIZE + 8,
   },
 });

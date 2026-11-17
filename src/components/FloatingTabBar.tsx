@@ -1,10 +1,9 @@
-import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import {
-  Bell,
   CalendarBlank,
   CloudSun,
   GearSix,
+  TShirt,
   type Icon,
 } from 'phosphor-react-native';
 import { useEffect, useState } from 'react';
@@ -52,7 +51,7 @@ interface FloatingTabBarProps {
 const TAB_SPECS: Record<string, { icon: Icon; labelKey: string }> = {
   index: { icon: CloudSun, labelKey: 'tab.today' },
   hafta: { icon: CalendarBlank, labelKey: 'tab.week' },
-  uyarilar: { icon: Bell, labelKey: 'tab.alerts' },
+  oneri: { icon: TShirt, labelKey: 'tab.outfit' },
   ayarlar: { icon: GearSix, labelKey: 'tab.settings' },
 };
 
@@ -60,13 +59,6 @@ const PILL_HEIGHT = 64;
 const SCREEN_PADDING_EDGE = spacing.lg;
 const INDICATOR_HEIGHT = 48;
 const PILL_PADDING = 8;
-
-const ANDROID_BLUR_METHOD =
-  Platform.OS === 'android'
-    ? Platform.Version >= 31
-      ? 'dimezisBlurViewSdk31Plus'
-      : 'dimezisBlurView'
-    : undefined;
 
 /**
  * Yüzen cam sekme çubuğu: ikon-only hap, içeriğin arkasından bulanık akar;
@@ -89,12 +81,12 @@ export function FloatingTabBar({ state, emitter, navigateToTab, insets }: Floati
   useEffect(() => {
     if (cellWidth <= 0) return;
     translateX.value = withSpring(state.index * cellWidth, {
-      damping: 18,
-      stiffness: 220,
+      damping: 32,
+      stiffness: 120,
     });
     indicatorScaleX.value = withSequence(
-      withTiming(1.08, { duration: 120 }),
-      withSpring(1, { damping: 18, stiffness: 220 })
+      withTiming(1.08, { duration: 200 }),
+      withSpring(1, { damping: 26, stiffness: 120 })
     );
   }, [state.index, cellWidth, translateX, indicatorScaleX]);
 
@@ -110,8 +102,8 @@ export function FloatingTabBar({ state, emitter, navigateToTab, insets }: Floati
 
   useEffect(() => {
     const target = keyboardOpen ? PILL_HEIGHT + insets.bottom + spacing.xl : 0;
-    hiddenOffset.value = withTiming(target, { duration: 180 });
-    hiddenOpacity.value = withTiming(keyboardOpen ? 0 : 1, { duration: 180 });
+    hiddenOffset.value = withTiming(target, { duration: 320 });
+    hiddenOpacity.value = withTiming(keyboardOpen ? 0 : 1, { duration: 320 });
   }, [keyboardOpen, insets.bottom, hiddenOffset, hiddenOpacity]);
 
   const barStyle = useAnimatedStyle(() => ({
@@ -124,7 +116,6 @@ export function FloatingTabBar({ state, emitter, navigateToTab, insets }: Floati
     transform: [{ translateX: translateX.value }, { scaleX: indicatorScaleX.value }],
   }));
 
-  const isDark = theme.isDark;
   const material = glassMaterial(theme, 'pill');
 
   const materialStyle = [
@@ -148,12 +139,6 @@ export function FloatingTabBar({ state, emitter, navigateToTab, insets }: Floati
           onLayout={(event) => setPillWidth(event.nativeEvent.layout.width)}
         >
           <View style={[materialStyle, styles.pill]}>
-            <BlurView
-              intensity={50}
-              tint={isDark ? 'dark' : 'light'}
-              blurMethod={ANDROID_BLUR_METHOD}
-              style={StyleSheet.absoluteFill}
-            />
             {/* Üst kenarda ince parlak iç çizgi */}
             <View
               style={[
@@ -235,10 +220,11 @@ const styles = StyleSheet.create({
     flex: 1,
     // iOS gölge; Android'de elevation.
     shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 10,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    // Android elevation'ı koyu çerçeve gibi görünüyor; yalnızca iOS'ta gölge.
+    elevation: Platform.OS === 'android' ? 0 : 4,
   },
   materialClip: {
     flex: 1,

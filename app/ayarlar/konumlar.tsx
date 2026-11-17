@@ -1,8 +1,8 @@
-import { MapPin, Trash } from 'phosphor-react-native';
+import { MapPin, NavigationArrow, Trash } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Glass, GlassButton, ScreenBackground } from '@/components/glass';
@@ -10,7 +10,7 @@ import { SettingsHeader } from '@/components/SettingsHeader';
 import { useProfile } from '@/hooks/useProfile';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { t } from '@/i18n';
-import { getCurrentPlace, requestLocationPermission } from '@/services/locationService';
+import { getCurrentPlace, hasLocationPermission } from '@/services/locationService';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { MIN_TOUCH_SIZE, spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -24,29 +24,43 @@ export default function CitiesScreen() {
   const { profile, addCity, removeCity } = useProfile();
   const { selectPlace } = useWeatherContext();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const addCurrentLocation = async (): Promise<void> => {
     if (busy) return;
+    // İzin henüz yoksa sistem diyaloğundan önce kısa açıklama göster.
+    if (!(await hasLocationPermission())) {
+      const approved = await new Promise<boolean>((resolve) => {
+        Alert.alert(t('settings.locPermTitle'), t('settings.locPermBody'), [
+          { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+          { text: t('common.allow'), onPress: () => resolve(true) },
+        ]);
+      });
+      if (!approved) return;
+    }
     setBusy(true);
+    setError(null);
     try {
-      const granted = await requestLocationPermission();
-      if (!granted) return;
       const place = await getCurrentPlace();
       await addCity(place);
-      await selectPlace(place);
-      router.back();
+      // Hava verisi arka planda çekilir; beklemeden ana ekrana dön.
+      void selectPlace(place);
+      router.dismissTo('/');
+    } catch (err) {
+      setError(err instanceof Error && err.message ? err.message : t('error.location'));
     } finally {
       setBusy(false);
     }
   };
 
-  const select = async (place: Place): Promise<void> => {
-    await selectPlace(place);
-    router.back();
+  const select = (place: Place): void => {
+    // Seçim anında kaydedilir; hava güncellemesi ana ekranda yüklenir.
+    void selectPlace(place);
+    router.dismissTo('/');
   };
 
   return (
-    <ScreenBackground kind="partly" isDay>
+    <ScreenBackground kind="partly">
       <SettingsHeader title={t('settings.citiesTitle')} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]}
@@ -64,6 +78,10 @@ export default function CitiesScreen() {
           disabled={busy}
         />
 
+        {error ? (
+          <Text style={[typography.caption, { color: theme.text }]}>{error}</Text>
+        ) : null}
+
         {profile.cities.length === 0 ? (
           <Text style={[typography.body, { color: theme.textSecondary }]}>
             {t('settings.citiesEmpty')}
@@ -79,7 +97,11 @@ export default function CitiesScreen() {
                     accessibilityRole="button"
                     style={({ pressed }) => [styles.rowMain, { opacity: pressed ? 0.7 : 1 }]}
                   >
-                    <MapPin size={18} color={theme.primary} weight="regular" />
+                    {city.source === 'gps' ? (
+                      <NavigationArrow size={18} color={theme.tabActive} weight="regular" />
+                    ) : (
+                      <MapPin size={18} color={theme.primary} weight="regular" />
+                    )}
                     <View style={styles.rowText}>
                       <Text style={[typography.body, { color: theme.text }]} numberOfLines={1}>
                         {city.name}

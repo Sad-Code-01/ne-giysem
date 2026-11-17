@@ -28,13 +28,17 @@ function isNumeric(value: unknown): value is number {
  * Şehir adına göre yer arar (Open-Meteo Geocoding API).
  * Sonuç yoksa boş dizi döner; teknik hata olursa `ServiceError` fırlatır.
  */
-export async function searchCities(query: string): Promise<Place[]> {
+export async function searchCities(query: string, countryCode?: string | null): Promise<Place[]> {
   const trimmed = query.trim();
   if (trimmed.length < MIN_SEARCH_LENGTH) return [];
 
-  const url =
+  let url =
     `${GEOCODING_API_URL}?name=${encodeURIComponent(trimmed)}` +
-    '&count=5&language=tr&format=json';
+    '&count=8&language=tr&format=json';
+  // Ülke süzgeci verilirse yalnızca o ülkedeki sonuçlar döner (varsayılan: Türkiye).
+  if (countryCode) {
+    url += `&country_code=${encodeURIComponent(countryCode)}`;
+  }
 
   const response = await fetchJson<GeocodingResponse>(url);
   const results = Array.isArray(response.results) ? response.results : [];

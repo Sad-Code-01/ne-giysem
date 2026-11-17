@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
+import { useProfile } from '@/hooks/useProfile';
+
 import { CACHE_MAX_AGE_MS, FOREGROUND_REFRESH_MS } from '@/constants/config';
 import { isConsentValid } from '@/logic/consent';
 import { locale } from '@/i18n';
@@ -56,6 +58,16 @@ export function useWeatherOutfit(): WeatherOutfitState {
 
   const isMounted = useRef(true);
   const snapshotRef = useRef<WeatherSnapshot | null>(null);
+  // Aynı anda birden çok istek başlayabilir (hızlı dokunuş); yalnızca en
+  // son başlatılanın sonucu uygulanır, eskiler sessizce düşer.
+  const loadSeq = useRef(0);
+  const gpsBusy = useRef(false);
+  // addCity context'ten gelir; referans değişse bile load yeniden kurulmasın.
+  const { addCity } = useProfile();
+  const addCityRef = useRef(addCity);
+  useEffect(() => {
+    addCityRef.current = addCity;
+  }, [addCity]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -100,12 +112,13 @@ export function useWeatherOutfit(): WeatherOutfitState {
     [showCachedSnapshot]
   );
 
-  /** Verilen yer için hava durumunu çeker ve durumu günceller. */
+  /** Verilen yer için hava durumunu çeker; başarılıysa true döner. */
   const load = useCallback(
-    async (place: Place): Promise<void> => {
+    async (place: Place): Promise<boolean> => {
+      const seq = ++loadSeq.current;
       try {
         const fresh = await openMeteoProvider.fetchWeather(place);
-        if (!isMounted.current) return;
+        if (!isMounted.current || seq !== loadSeq.current) return false;
 
         setSnapshot(fresh);
         setIsOffline(false);
@@ -113,8 +126,16 @@ export function useWeatherOutfit(): WeatherOutfitState {
         setStatus('ready');
         await setLastSnapshot(fresh);
         void pushWidgetUpdate();
+        // GPS'ten otomatik çekilen konum "Konumlarım" listesine de eklensin.
+        if (place.source === 'gps') {
+          void addCityRef.current(place);
+        }
+        return true;
       } catch (error) {
-        await handleFailure(error, 'api');
+        if (isMounted.current && seq === loadSeq.current) {
+          await handleFailure(error, 'api');
+        }
+        return false;
       }
     },
     [handleFailure]
@@ -191,28 +212,34 @@ export function useWeatherOutfit(): WeatherOutfitState {
 
   /** Konum ikonuna dokunulduğunda mevcut konumu yeniden çözer. */
   const loadMyLocation = useCallback(async (): Promise<void> => {
+    // Üst üste dokunuşta ikinci izin diyaloğu/istek pilemesin.
+    if (gpsBusy.current) return;
+    gpsBusy.current = true;
     setStatus('loading');
     setErrorKind(null);
 
     try {
-      const granted = await requestLocationPermission();
-      if (!granted) throw new ServiceError('permission', 'Konum izni verilmedi.');
-
       const place = await getCurrentPlace();
-      await setSelectedPlace(null);
-      await load(place);
+      // Konum ancak hava verisi başarıyla çekilirse kalıcı olur;
+      // aksi hâlde eski kayıtlı yer korunur.
+      if (await load(place)) {
+        await setSelectedPlace(place);
+      }
     } catch (error) {
       await handleFailure(error, 'location');
+    } finally {
+      gpsBusy.current = false;
     }
   }, [load, handleFailure]);
 
-  /** Şehir aramasından seçilen yeri yükler ve hatırlar. */
+  /** Şehir aramasından seçilen yeri yükler; başarılıysa hatırlar. */
   const selectPlace = useCallback(
     async (place: Place): Promise<void> => {
       setStatus('loading');
       setErrorKind(null);
-      await setSelectedPlace(place);
-      await load(place);
+      if (await load(place)) {
+        await setSelectedPlace(place);
+      }
     },
     [load]
   );

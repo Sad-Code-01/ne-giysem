@@ -60,7 +60,11 @@ export default function WeekScreen() {
     return Array.from({ length: WEEK_DAYS }, (_, offset) => {
       const outfit = buildDayOutfit(snapshot, outfitProfile, offset);
       const daily = snapshot.daily.find((day) => day.date === outfit.date && !day.isPast);
-      return { outfit, daily };
+      const temps = snapshot.hourly
+        .filter((point) => point.time.startsWith(outfit.date))
+        .map((point) => point.temperature);
+      const avg = temps.length > 0 ? temps.reduce((sum, v) => sum + v, 0) / temps.length : null;
+      return { outfit, daily, avg };
     });
   }, [snapshot, outfitProfile]);
 
@@ -71,6 +75,11 @@ export default function WeekScreen() {
     if (temps.length === 0) return { min: 0, max: 1 };
     return { min: Math.min(...temps), max: Math.max(...temps) };
   }, [days]);
+
+  const selectedHourly = useMemo(() => {
+    if (!snapshot || !selected) return [];
+    return snapshot.hourly.filter((point) => point.time.startsWith(selected.date));
+  }, [snapshot, selected]);
 
   const selectedSlotWeathers = useMemo(() => {
     if (!snapshot || !selected) return [];
@@ -117,7 +126,7 @@ export default function WeekScreen() {
           <Text style={[typography.titleL, { color: theme.text }]}>{t('week.title')}</Text>
         </Animated.View>
         <View style={styles.list}>
-          {days.map(({ outfit, daily }, index) => (
+          {days.map(({ outfit, daily, avg }, index) => (
             <Animated.View key={outfit.date} entering={FadeInDown.delay(60 + index * 40).duration(300)}>
               <DayRow
                 dayOutfit={outfit}
@@ -126,6 +135,7 @@ export default function WeekScreen() {
                 dateLabel={dateLabel(outfit.date)}
                 weekMin={weekRange.min}
                 weekMax={weekRange.max}
+                avgTempC={avg}
                 onPress={() => setSelected(outfit)}
               />
             </Animated.View>
@@ -139,7 +149,7 @@ export default function WeekScreen() {
   }
 
   return (
-    <ScreenBackground kind={backdrop.kind} isDay={backdrop.isDay}>
+    <ScreenBackground kind={backdrop.kind}>
       <Animated.View style={[styles.flex, fadeStyle]}>{body}</Animated.View>
       <SheetModal
         visible={selected !== null}
@@ -189,6 +199,34 @@ export default function WeekScreen() {
                   );
                 })}
               </View>
+
+              {/* Saatlik kırılım: 3 saatte bir */}
+              {selectedHourly.length > 0 ? (
+                <View style={styles.hourlyBlock}>
+                  <View style={[styles.hairline, { backgroundColor: 'rgba(120,140,165,0.25)' }]} />
+                  <Text style={[typography.caption, { color: theme.textSecondary, marginTop: spacing.sm }]}>
+                    {t('week.hourlyTitle')}
+                  </Text>
+                  <View style={styles.hourlyGrid}>
+                    {selectedHourly.filter((_, i) => i % 3 === 0).map((point) => (
+                      <View key={point.time} style={styles.hourlyCell}>
+                        <Text style={[typography.micro, { color: theme.textSecondary }]}>
+                          {point.time.slice(11, 16)}
+                        </Text>
+                        <WeatherIcon
+                          kind={getWeatherVisual(point.weatherCode, point.isDay).kind}
+                          isDay={point.isDay}
+                          size={18}
+                          color={theme.textSecondary}
+                        />
+                        <Text style={[typography.caption, { color: theme.text }]}>
+                          {`${Math.round(point.temperature)}°`}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
             </Glass>
           </View>
         ) : null}
@@ -247,5 +285,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     maxWidth: 140,
+  },
+  hourlyBlock: {
+    marginTop: spacing.md,
+  },
+  hairline: {
+    height: 1,
+  },
+  hourlyGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: spacing.sm,
+  },
+  hourlyCell: {
+    width: '25%',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: spacing.xs,
   },
 });

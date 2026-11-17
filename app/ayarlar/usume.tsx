@@ -95,7 +95,7 @@ export default function ColdSettingsScreen() {
     : { kind: 'partly' as const, isDay: true };
 
   return (
-    <ScreenBackground kind={backdrop.kind} isDay={backdrop.isDay}>
+    <ScreenBackground kind={backdrop.kind}>
       <SettingsHeader title={t('settings.coldTitle')} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]}

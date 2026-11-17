@@ -57,7 +57,7 @@ export function MiniWidget({ content }: MiniWidgetProps) {
         width: 'match_parent',
         backgroundColor: palette.bgFrom,
         borderRadius: 24,
-        paddingHorizontal: 14,
+        paddingHorizontal: 12,
         flexDirection: 'row',
         alignItems: 'center',
       }}
@@ -65,22 +65,22 @@ export function MiniWidget({ content }: MiniWidgetProps) {
       {content.weatherIconKey ? (
         <SvgWidget
           svg={widgetIconSvg(content.weatherIconKey, palette.iconColor)}
-          style={{ height: 30, width: 30, marginRight: 10 }}
+          style={{ height: 26, width: 26, marginRight: 8 }}
         />
       ) : null}
       <TextWidget
         text={content.temperatureC !== null ? `${content.temperatureC}°` : '—'}
-        style={{ fontSize: 30, fontWeight: '800', color: palette.text }}
+        style={{ fontSize: 26, fontWeight: '800', color: palette.text }}
       />
-      <FlexWidget style={{ flex: 1, marginLeft: 10 }}>
+      <FlexWidget style={{ flex: 1, marginLeft: 8 }}>
         {subtitle ? (
-          <TextWidget text={subtitle} maxLines={1} style={{ fontSize: 12, color: palette.textSecondary }} />
+          <TextWidget text={subtitle} maxLines={1} style={{ fontSize: 11, color: palette.textSecondary }} />
         ) : null}
         {content.suggestionShort ? (
           <TextWidget
             text={content.suggestionShort}
             maxLines={1}
-            style={{ fontSize: 12, fontWeight: '600', color: palette.text, marginTop: 1 }}
+            style={{ fontSize: 11, fontWeight: '600', color: palette.text, marginTop: 1 }}
           />
         ) : null}
       </FlexWidget>

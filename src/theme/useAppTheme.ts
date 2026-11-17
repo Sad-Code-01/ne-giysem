@@ -1,11 +1,19 @@
 import { useColorScheme } from 'react-native';
+import { useEffect, useState } from 'react';
 
 import { DARK_THEME, LIGHT_THEME, type AppTheme } from '@/theme/tokens';
+import { getThemeMode, subscribeThemeMode, type ThemeMode } from '@/theme/themeMode';
 
 /**
- * Sistem açık/koyu ayarını izler. Palet sabittir; hava durumu rengi değiştirmez.
+ * Tema modu (Sistem/Açık/Koyu) + sistem rengini birleştirir.
+ * Palet sabittir; hava durumu rengi değiştirmez.
  */
 export function useAppTheme(): AppTheme {
-  const scheme = useColorScheme();
-  return scheme === 'dark' ? DARK_THEME : LIGHT_THEME;
+  const systemScheme = useColorScheme();
+  const [mode, setMode] = useState<ThemeMode>(getThemeMode);
+
+  useEffect(() => subscribeThemeMode(() => setMode(getThemeMode())), []);
+
+  const dark = mode === 'system' ? systemScheme === 'dark' : mode === 'dark';
+  return dark ? DARK_THEME : LIGHT_THEME;
 }

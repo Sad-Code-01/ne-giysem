@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { LockSimple } from 'phosphor-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Glass, GlassButton, ScreenBackground } from '@/components/glass';
@@ -7,10 +8,7 @@ import { SettingsHeader } from '@/components/SettingsHeader';
 import { TimeWheel } from '@/components/TimeWheel';
 import { useProfile } from '@/hooks/useProfile';
 import { nextTriggerDate } from '@/logic/notifications';
-import {
-  requestNotificationPermission,
-  sendTestNotification,
-} from '@/services/notificationService';
+import { getNotificationPermission, requestNotificationPermission } from '@/services/notificationService';
 import { t } from '@/i18n';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { MIN_TOUCH_SIZE, spacing } from '@/theme/spacing';
@@ -32,34 +30,58 @@ export default function NotificationSettingsScreen() {
   const insets = useSafeAreaInsets();
   const { profile, setNotifEnabled, setNotifSchedule } = useProfile();
   const [denied, setDenied] = useState(false);
-  const [testState, setTestState] = useState<'idle' | 'sent' | 'failed'>('idle');
+  // Kullanıcı tekerleği oynatınca taslak oluşur; "Tamam" ile kaydedilir.
+  const [draft, setDraft] = useState<{ hour: number; minute: number } | null>(null);
+  const shownHour = draft?.hour ?? profile.notifHour;
+  const shownMinute = draft?.minute ?? profile.notifMinute;
 
   const handleToggle = async (value: boolean): Promise<void> => {
     if (value) {
+      // İzin henüz yoksa sistem diyaloğundan önce kısa açıklama göster.
+      if (!(await getNotificationPermission())) {
+        const approved = await new Promise<boolean>((resolve) => {
+          Alert.alert(t('settings.notifPermTitle'), t('settings.notifPermBody'), [
+            { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+            { text: t('common.allow'), onPress: () => resolve(true) },
+          ]);
+        });
+        if (!approved) return;
+      }
       const granted = await requestNotificationPermission();
       if (!granted) {
         setDenied(true);
         return;
       }
       setDenied(false);
+    } else {
+      // Açık durumdayken kapatma yanlışlıkla olmasın diye onay iste.
+      const approved = await new Promise<boolean>((resolve) => {
+        Alert.alert(t('settings.notifOffTitle'), t('settings.notifOffBody'), [
+          { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+          { text: t('settings.notifOffConfirm'), style: 'destructive', onPress: () => resolve(true) },
+        ]);
+      });
+      if (!approved) return;
     }
     await setNotifEnabled(value);
   };
 
   const handleTimeChange = (hour: number, minute: number): void => {
-    void setNotifSchedule(periodForHour(hour), hour, minute);
+    setDraft({ hour, minute });
   };
 
-  const handleTest = async (): Promise<void> => {
-    const ok = await sendTestNotification();
-    setTestState(ok ? 'sent' : 'failed');
+  const handleTimeConfirm = (): void => {
+    if (!draft) return;
+    void setNotifSchedule(periodForHour(draft.hour), draft.hour, draft.minute).then(() =>
+      setDraft(null)
+    );
   };
 
   const nextAt = nextTriggerDate(profile.notifHour, profile.notifMinute);
   const nextLabel = `${pad2(nextAt.getDate())}.${pad2(nextAt.getMonth() + 1)} ${pad2(nextAt.getHours())}:${pad2(nextAt.getMinutes())}`;
 
   return (
-    <ScreenBackground kind="partly" isDay={!theme.isDark}>
+    <ScreenBackground kind="partly">
       <SettingsHeader title={t('settings.notifTitle')} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]}
@@ -72,6 +94,9 @@ export default function NotificationSettingsScreen() {
         <Glass>
           <View style={styles.row}>
             <Text style={[typography.body, { color: theme.text, flex: 1 }]}>{t('ob.notifToggle')}</Text>
+            {profile.notifEnabled ? (
+              <LockSimple size={16} color={theme.textSecondary} />
+            ) : null}
             <Switch
               value={profile.notifEnabled}
               onValueChange={(value) => void handleToggle(value)}
@@ -85,37 +110,16 @@ export default function NotificationSettingsScreen() {
             <>
               <View style={styles.divider} />
               <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('ob.notifTime')}</Text>
-              <TimeWheel
-                hour={profile.notifHour}
-                minute={profile.notifMinute}
-                onChange={handleTimeChange}
+              <TimeWheel hour={shownHour} minute={shownMinute} onChange={handleTimeChange} />
+              <GlassButton
+                label={t('common.done')}
+                onPress={handleTimeConfirm}
+                disabled={draft === null}
               />
               <Text style={[typography.micro, { color: theme.textSecondary }]}>
                 {t('settings.notifNext', { time: nextLabel })}
               </Text>
             </>
-          ) : null}
-        </Glass>
-
-        <Glass>
-          <View style={styles.row}>
-            <View style={{ flex: 1 }}>
-              <Text style={[typography.body, { color: theme.text }]}>{t('settings.notifTest')}</Text>
-              <Text style={[typography.micro, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
-                {t('settings.notifTestHint')}
-              </Text>
-            </View>
-            <GlassButton
-              label={t('settings.notifTestSend')}
-              variant="secondary"
-              onPress={() => void handleTest()}
-            />
-          </View>
-          {testState === 'sent' ? (
-            <Text style={[typography.caption, { color: theme.primary }]}>{t('settings.notifTestSent')}</Text>
-          ) : null}
-          {testState === 'failed' ? (
-            <Text style={[typography.caption, { color: theme.text }]}>{t('settings.notifDenied')}</Text>
           ) : null}
         </Glass>
 

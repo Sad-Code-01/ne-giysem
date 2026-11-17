@@ -1,4 +1,4 @@
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
@@ -8,11 +8,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useEffect } from 'react';
 
-import { Glass } from '@/components/glass';
+import { t } from '@/i18n';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { spacing } from '@/theme/spacing';
+import { typography } from '@/theme/typography';
 
-/** Yükleme: nabız atan cam iskelet. Sahte veri yok. */
+/** Yükleme: logo + nabız + kısa açıklama. Boş ekran yerine marka hissi verir. */
 export function LoadingView() {
   const theme = useAppTheme();
   const reduceMotion = useReducedMotion();
@@ -20,42 +21,37 @@ export function LoadingView() {
 
   useEffect(() => {
     if (reduceMotion) return;
-    pulse.value = withRepeat(withTiming(0.55, { duration: 700 }), -1, true);
+    pulse.value = withRepeat(withTiming(0.6, { duration: 800 }), -1, true);
   }, [pulse, reduceMotion]);
 
-  const shimmerStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
-  const bone = theme.isDark ? 'rgba(255,255,255,0.14)' : 'rgba(120,140,165,0.25)';
+  const logoStyle = useAnimatedStyle(() => ({ opacity: pulse.value }));
 
   return (
-    <Glass style={styles.card}>
-      <Animated.View style={shimmerStyle}>
-        <View style={[styles.hole, { borderColor: bone }]} />
-        <View style={[styles.line, { backgroundColor: bone, width: '70%' }]} />
-        <View style={[styles.line, { backgroundColor: bone, width: '46%' }]} />
+    <View style={styles.wrap}>
+      <Animated.View style={logoStyle}>
+        <Image
+          source={require('../../assets/icon.png')}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+        />
       </Animated.View>
-      <ActivityIndicator color={theme.tabActive} />
-    </Glass>
+      <Text style={[typography.caption, { color: theme.textSecondary }]}>
+        {t('loading.weather')}
+      </Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  wrap: {
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.xxl,
-    paddingHorizontal: spacing.xl,
-    width: '100%',
   },
-  hole: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1,
-    marginBottom: spacing.sm,
-  },
-  line: {
-    height: 12,
-    borderRadius: 6,
-    marginBottom: spacing.sm,
+  logo: {
+    width: 84,
+    height: 84,
   },
 });

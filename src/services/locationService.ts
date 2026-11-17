@@ -4,14 +4,13 @@ import { ServiceError } from '@/services/http';
 import type { Place } from '@/types';
 
 /** Konum alınamazsa sonsuza kadar beklememek için zaman aşımı. */
-const LOCATION_TIMEOUT_MS = 20_000;
+const BALANCED_TIMEOUT_MS = 15_000;
+const LOW_TIMEOUT_MS = 10_000;
+const GEOCODE_TIMEOUT_MS = 8_000;
 
-function withTimeout<T>(promise: Promise<T>): Promise<T> {
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(
-      () => reject(new ServiceError('location', 'Konumun alınamadı.')),
-      LOCATION_TIMEOUT_MS
-    );
+    const timer = setTimeout(() => reject(new ServiceError('location', message)), ms);
     promise.then(
       (value) => {
         clearTimeout(timer);
@@ -34,10 +33,32 @@ export async function isLocationServiceEnabled(): Promise<boolean> {
   }
 }
 
-/** Ön plan konum iznini ister. */
+/** İzin verilmiş mi — sormadan kontrol eder (ön-bildirim kararı için). */
+export async function hasLocationPermission(): Promise<boolean> {
+  try {
+    const current = await Location.getForegroundPermissionsAsync();
+    return current.status === Location.PermissionStatus.GRANTED;
+  } catch {
+    return false;
+  }
+}
+
+/** Ön plan konum iznini ister; verilmişse tekrar sormaz. */
 export async function requestLocationPermission(): Promise<boolean> {
+  const current = await Location.getForegroundPermissionsAsync();
+  if (current.status === Location.PermissionStatus.GRANTED) return true;
   const { status } = await Location.requestForegroundPermissionsAsync();
   return status === Location.PermissionStatus.GRANTED;
+}
+
+/** İzin durumunu hataya çevirir: reddedildiyse 'permission', açıksa null. */
+async function ensurePermission(): Promise<void> {
+  const current = await Location.getForegroundPermissionsAsync();
+  if (current.status === Location.PermissionStatus.GRANTED) return;
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== Location.PermissionStatus.GRANTED) {
+    throw new ServiceError('permission', 'Konum izni verilmedi.');
+  }
 }
 
 async function resolvePosition(): Promise<Location.LocationObject> {
@@ -45,7 +66,9 @@ async function resolvePosition(): Promise<Location.LocationObject> {
   // o da olmazsa son bilinen konum.
   try {
     return await withTimeout(
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced }),
+      BALANCED_TIMEOUT_MS,
+      'Konum zaman aşımına uğradı.'
     );
   } catch {
     // yut — düşük doğrulukla tekrar dene
@@ -53,7 +76,9 @@ async function resolvePosition(): Promise<Location.LocationObject> {
 
   try {
     return await withTimeout(
-      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low })
+      Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Low }),
+      LOW_TIMEOUT_MS,
+      'Konum zaman aşımına uğradı.'
     );
   } catch {
     // yut — son bilinen konuma düş
@@ -61,7 +86,7 @@ async function resolvePosition(): Promise<Location.LocationObject> {
 
   const lastKnown = await Location.getLastKnownPositionAsync();
   if (lastKnown) return lastKnown;
-  throw new ServiceError('location', 'Konumun alınamadı.');
+  throw new ServiceError('location', 'Konumun alınamadı. Konum servilerinin açık olduğundan emin ol.');
 }
 
 /**
@@ -74,12 +99,17 @@ export async function getCurrentPlace(): Promise<Place> {
     throw new ServiceError('location', 'Konum servisleri kapalı görünüyor.');
   }
 
+  await ensurePermission();
   const position = await resolvePosition();
   const { latitude, longitude } = position.coords;
 
   let address: Location.LocationGeocodedAddress | null = null;
   try {
-    const addresses = await Location.reverseGeocodeAsync({ latitude, longitude });
+    const addresses = await withTimeout(
+      Location.reverseGeocodeAsync({ latitude, longitude }),
+      GEOCODE_TIMEOUT_MS,
+      'Konum adı alınamadı.'
+    );
     address = addresses[0] ?? null;
   } catch {
     address = null;

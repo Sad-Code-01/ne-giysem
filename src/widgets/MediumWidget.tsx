@@ -54,7 +54,7 @@ export function MediumWidget({ content }: MediumWidgetProps) {
         width: 'match_parent',
         backgroundGradient: { from: palette.bgFrom, to: palette.bgTo, orientation: 'TOP_BOTTOM' },
         borderRadius: 24,
-        padding: 16,
+        padding: 14,
         flexDirection: 'column',
       }}
     >
@@ -77,25 +77,25 @@ export function MediumWidget({ content }: MediumWidgetProps) {
           {content.weatherIconKey ? (
             <SvgWidget
               svg={widgetIconSvg(content.weatherIconKey, palette.iconColor)}
-              style={{ height: 28, width: 28, marginBottom: 4 }}
+              style={{ height: 24, width: 24, marginBottom: 4 }}
             />
           ) : null}
           <TextWidget
             text={content.temperatureC !== null ? `${content.temperatureC}°` : '—'}
-            style={{ fontSize: 36, fontWeight: '800', color: palette.text }}
+            style={{ fontSize: 32, fontWeight: '800', color: palette.text }}
           />
           <TextWidget
             text={content.conditionLabel ?? ''}
             maxLines={1}
-            style={{ fontSize: 13, color: palette.textSecondary }}
+            style={{ fontSize: 12, color: palette.textSecondary }}
           />
           <TextWidget
             text={content.placeName}
             maxLines={1}
-            style={{ fontSize: 12, color: palette.textSecondary, marginTop: 2 }}
+            style={{ fontSize: 11, color: palette.textSecondary, marginTop: 2 }}
           />
           {minMax ? (
-            <TextWidget text={minMax} style={{ fontSize: 12, fontWeight: '600', color: palette.textSecondary }} />
+            <TextWidget text={minMax} style={{ fontSize: 11, fontWeight: '600', color: palette.textSecondary }} />
           ) : null}
         </FlexWidget>
 
@@ -112,15 +112,15 @@ export function MediumWidget({ content }: MediumWidgetProps) {
             <TextWidget
               text={content.suggestionTitle}
               maxLines={2}
-              style={{ fontSize: 15, fontWeight: '700', color: palette.text, marginBottom: 6 }}
+              style={{ fontSize: 14, fontWeight: '700', color: palette.text, marginBottom: 6 }}
             />
           ) : null}
-          {(content.suggestionParts ?? []).slice(0, 3).map((part) => (
+          {(content.suggestionParts ?? []).slice(0, 4).map((part) => (
             <TextWidget
               key={part.label}
               text={`${part.label}: ${part.value}`}
               maxLines={1}
-              style={{ fontSize: 12, color: palette.textSecondary, marginTop: 2 }}
+              style={{ fontSize: 11, color: palette.textSecondary, marginTop: 2 }}
             />
           ))}
           {content.staleLabel ? (
@@ -150,14 +150,14 @@ export function MediumWidget({ content }: MediumWidgetProps) {
               key={point.hourLabel}
               style={{ flexDirection: 'column', alignItems: 'center', flex: 1 }}
             >
-              <TextWidget text={point.hourLabel} style={{ fontSize: 10, color: palette.textSecondary }} />
+              <TextWidget text={point.hourLabel} style={{ fontSize: 9, color: palette.textSecondary }} />
               <SvgWidget
                 svg={widgetIconSvg(point.iconKey, palette.iconColor)}
-                style={{ height: 18, width: 18, marginTop: 2, marginBottom: 2 }}
+                style={{ height: 16, width: 16, marginTop: 2, marginBottom: 2 }}
               />
               <TextWidget
                 text={`${point.temperatureC}°`}
-                style={{ fontSize: 12, fontWeight: '600', color: palette.text }}
+                style={{ fontSize: 11, fontWeight: '600', color: palette.text }}
               />
             </FlexWidget>
           ))}

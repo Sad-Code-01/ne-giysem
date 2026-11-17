@@ -47,6 +47,9 @@ export function Glass({
   const theme = useAppTheme();
   const material = glassMaterial(theme, variant);
   const isDark = theme.isDark;
+  // Android'de BlurView opak dolgu üzerinde siyah leke üretebiliyor;
+  // blur yalnızca iOS'ta uygulanır, Android opak cam görünümüne düşer.
+  const useBlur = blur && Platform.OS !== 'android';
 
   return (
     <View
@@ -61,7 +64,7 @@ export function Glass({
         style,
       ]}
     >
-      {blur ? (
+      {useBlur ? (
         <BlurView
           intensity={blurIntensity}
           tint={isDark ? 'dark' : 'light'}

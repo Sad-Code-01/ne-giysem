@@ -1,4 +1,4 @@
-import { CloudSun, DeviceMobile } from 'phosphor-react-native';
+import { Check, CloudSun } from 'phosphor-react-native';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -16,12 +16,12 @@ interface WidgetHelpSheetProps {
   onClose: () => void;
 }
 
-type WidgetKind = 'mini' | 'small' | 'medium';
+export type WidgetKind = 'mini' | 'small' | 'medium';
 
-const WIDGETS: { kind: WidgetKind; name: string; hint: string }[] = [
-  { kind: 'mini', name: 'Mini', hint: 'settings.widgetMiniHint' },
-  { kind: 'small', name: 'Küçük', hint: 'settings.widgetSmallHint' },
-  { kind: 'medium', name: 'Orta', hint: 'settings.widgetMediumHint' },
+export const WIDGETS: { kind: WidgetKind; name: string; cells: string; hint: string; height: number; provider: string }[] = [
+  { kind: 'mini', name: 'Mini', cells: '2×1', hint: 'settings.widgetMiniHint', height: 44, provider: 'Mini' },
+  { kind: 'small', name: 'Küçük', cells: '3×2', hint: 'settings.widgetSmallHint', height: 92, provider: 'Kucuk' },
+  { kind: 'medium', name: 'Orta', cells: '4×2', hint: 'settings.widgetMediumHint', height: 104, provider: 'Orta' },
 ];
 
 const BG_OPTIONS: { value: WidgetBgMode; labelKey: string }[] = [
@@ -30,29 +30,34 @@ const BG_OPTIONS: { value: WidgetBgMode; labelKey: string }[] = [
   { value: 'clear', labelKey: 'settings.widgetBgClear' },
 ];
 
-/** Uygulama içi widget önizlemesi (RemoteViews değil, sade RN görünümü). */
-function WidgetPreview({ kind, selected }: { kind: WidgetKind; selected: boolean }) {
+/** Uygulama içi widget önizlemesi — gerçek boyut oranlarına yakın (RemoteViews değil). */
+export function WidgetPreview({ kind, height, selected }: { kind: WidgetKind; height: number; selected: boolean }) {
   const theme = useAppTheme();
-  const bg = theme.isDark ? '#1B2733' : '#DCE8F3';
+  const bg = theme.isDark ? '#1B2733' : '#E4EDF7';
   const fg = theme.isDark ? '#EAF1F8' : '#1B2733';
   const sub = theme.isDark ? '#9FB0C0' : '#51616F';
   const accent = theme.isDark ? '#8FB8FF' : '#2F6FED';
 
   const box = {
     backgroundColor: bg,
-    borderRadius: radius.card,
-    borderWidth: selected ? 2 : 1,
-    borderColor: selected ? accent : 'transparent',
+    borderRadius: 16,
+    borderWidth: selected ? 2 : StyleSheet.hairlineWidth,
+    borderColor: selected ? accent : theme.line,
     padding: spacing.sm,
     overflow: 'hidden' as const,
+    height,
+    width: '100%',
+    justifyContent: 'center' as const,
   };
 
   if (kind === 'mini') {
     return (
       <View style={[box, styles.miniRow]}>
-        <CloudSun size={20} color={accent} weight="regular" />
+        <CloudSun size={16} color={accent} weight="regular" />
         <Text style={[styles.previewTemp, { color: fg }]}>13°</Text>
-        <Text style={[styles.previewSub, { color: sub }]}>Parçalı Bulutlu · Üsküdar</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.previewSub, { color: sub }]} numberOfLines={1}>Parçalı · Üsküdar</Text>
+        </View>
       </View>
     );
   }
@@ -60,41 +65,25 @@ function WidgetPreview({ kind, selected }: { kind: WidgetKind; selected: boolean
   if (kind === 'small') {
     return (
       <View style={box}>
-        <View style={styles.previewTopRow}>
-          <Text style={[styles.previewSub, { color: sub }]}>Üsküdar</Text>
-          <Text style={[styles.previewSub, { color: sub }]}>↑13 ↓9</Text>
-        </View>
         <View style={styles.previewMidRow}>
-          <Text style={[styles.previewTemp, { color: fg, fontSize: 30 }]}>13°</Text>
-          <CloudSun size={34} color={accent} weight="regular" />
+          <Text style={[styles.previewTemp, { color: fg }]}>13°</Text>
+          <CloudSun size={20} color={accent} weight="regular" />
         </View>
-        <Text style={[styles.previewBody, { color: fg }]}>Kazak + mont</Text>
+        <Text style={[styles.previewSub, { color: sub }]} numberOfLines={1}>Kazak + mont</Text>
       </View>
     );
   }
 
   return (
     <View style={box}>
-      <View style={styles.previewTopRow}>
+      <View style={styles.previewMidRow}>
         <View style={{ flex: 1 }}>
-          <CloudSun size={22} color={accent} weight="regular" />
-          <Text style={[styles.previewTemp, { color: fg, fontSize: 26, marginTop: 2 }]}>13°</Text>
-          <Text style={[styles.previewSub, { color: sub }]}>Parçalı Bulutlu · Üsküdar</Text>
+          <Text style={[styles.previewTemp, { color: fg }]}>13°</Text>
+          <Text style={[styles.previewSub, { color: sub }]} numberOfLines={1}>Parçalı · Üsküdar</Text>
         </View>
-        <View style={{ flex: 1, paddingLeft: spacing.sm }}>
-          <Text style={[styles.previewBody, { color: fg, fontWeight: '700' }]}>Bugün serin!</Text>
-          <Text style={[styles.previewSub, { color: sub }]}>Üst: Kazak</Text>
-          <Text style={[styles.previewSub, { color: sub }]}>Dış: Mont</Text>
-          <Text style={[styles.previewSub, { color: sub }]}>Aksesuar: Bere</Text>
-        </View>
+        <CloudSun size={20} color={accent} weight="regular" />
       </View>
-      <View style={[styles.previewHourly, { borderTopColor: sub }]}>
-        {['14:00', '15:00', '16:00', '17:00'].map((h) => (
-          <Text key={h} style={[styles.previewSub, { color: sub, flex: 1, textAlign: 'center' }]}>
-            {h} · 12°
-          </Text>
-        ))}
-      </View>
+      <Text style={[styles.previewSub, { color: fg }]} numberOfLines={1}>Üst: Kazak · Mont</Text>
     </View>
   );
 }
@@ -114,28 +103,46 @@ export function WidgetHelpSheet({ visible, onClose }: WidgetHelpSheetProps) {
   return (
     <SheetModal visible={visible} onClose={onClose} title={t('settings.widgetSheetTitle')}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-        <Text style={[typography.body, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
-          {t('settings.widgetIntro')}
+        {/* Örnekler: gerçek oranlarda, yanaşık; dokun-seç */}
+        <View style={styles.previewRow}>
+          {WIDGETS.map((widget) => {
+            const active = selected === widget.kind;
+            return (
+              <Pressable
+                key={widget.kind}
+                onPress={() => setSelected(widget.kind)}
+                accessibilityRole="button"
+                accessibilityLabel={`${widget.name} ${widget.cells}`}
+                accessibilityState={{ selected: active }}
+                style={styles.previewItem}
+              >
+                <WidgetPreview kind={widget.kind} height={widget.height} selected={active} />
+                <View style={styles.previewLabelRow}>
+                  {active ? (
+                    <View style={[styles.checkBadge, { backgroundColor: theme.primary }]}>
+                      <Check size={10} color="#FFFFFF" weight="bold" />
+                    </View>
+                  ) : null}
+                  <Text
+                    style={[
+                      typography.micro,
+                      { color: active ? theme.primary : theme.textSecondary },
+                    ]}
+                  >
+                    {widget.name} · {widget.cells}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Text style={[typography.micro, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
+          {t(selectedMeta.hint)}
         </Text>
 
-        {WIDGETS.map((widget) => (
-          <Pressable
-            key={widget.kind}
-            onPress={() => setSelected(widget.kind)}
-            accessibilityRole="button"
-            accessibilityLabel={t(widget.hint)}
-            style={styles.previewCard}
-          >
-            <WidgetPreview kind={widget.kind} selected={selected === widget.kind} />
-            <Text style={[typography.caption, { color: theme.textSecondary, marginTop: 6 }]}>
-              {t(widget.hint)}
-            </Text>
-          </Pressable>
-        ))}
-
-        <Text style={[typography.caption, { color: theme.textSecondary, marginTop: spacing.sm }]}>
-          {t('settings.widgetBgLabel')}
-        </Text>
+        <View style={styles.sectionLabel}>
+          <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('settings.widgetBgLabel')}</Text>
+        </View>
         <GlassSegmented
           options={BG_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) }))}
           value={profile.widgetBg}
@@ -145,19 +152,24 @@ export function WidgetHelpSheet({ visible, onClose }: WidgetHelpSheetProps) {
           {t('settings.widgetBgNote')}
         </Text>
 
+        <View style={styles.sectionLabel}>
+          <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('settings.widgetStepsTitle')}</Text>
+        </View>
         <View style={styles.steps}>
           {[1, 2, 3].map((step) => (
-            <Text key={step} style={[typography.body, { color: theme.text }]} maxFontSizeMultiplier={1.3}>
-              {`${step}. ${t(`settings.widgetStep${step}`, { widget: `Ne Giysem? (${selectedMeta.name})` })}`}
-            </Text>
+            <View key={step} style={[styles.stepRow, { borderColor: 'rgba(120,140,165,0.25)' }]}>
+              <View style={[styles.stepDot, { backgroundColor: theme.primary }]}>
+                <Text style={[typography.micro, { color: '#FFFFFF', fontWeight: '700' }]}>{step}</Text>
+              </View>
+              <Text style={[typography.caption, { color: theme.text, flex: 1 }]} maxFontSizeMultiplier={1.3}>
+                {t(`settings.widgetStep${step}`, { widget: `Ne Giysem? (${selectedMeta.name})` })}
+              </Text>
+            </View>
           ))}
-          <View style={styles.hintRow}>
-            <DeviceMobile size={16} color={theme.textSecondary} weight="regular" />
-            <Text style={[typography.micro, { color: theme.textSecondary, flex: 1 }]} maxFontSizeMultiplier={1.3}>
-              {t('settings.widgetAutoNote')}
-            </Text>
-          </View>
         </View>
+        <Text style={[typography.micro, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
+          {t('settings.widgetAutoNote')}
+        </Text>
 
         <GlassButton label={t('common.close')} variant="secondary" onPress={onClose} />
       </ScrollView>
@@ -170,52 +182,67 @@ const styles = StyleSheet.create({
     maxHeight: 520,
   },
   body: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
-  previewCard: {
-    marginTop: spacing.xs,
+  previewRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  previewItem: {
+    flex: 1,
+    alignItems: 'center',
   },
   miniRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    height: 44,
-  },
-  previewTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: spacing.xs,
   },
   previewMidRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginVertical: spacing.xs,
   },
   previewTemp: {
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: '800',
   },
-  previewBody: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
   previewSub: {
-    fontSize: 10,
+    fontSize: 9,
+    marginTop: 1,
   },
-  previewHourly: {
+  previewLabelRow: {
     flexDirection: 'row',
-    borderTopWidth: 1,
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+    minHeight: 16,
+  },
+  checkBadge: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionLabel: {
     marginTop: spacing.xs,
-    paddingTop: spacing.xs,
   },
   steps: {
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  hintRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
     gap: spacing.xs,
-    marginTop: spacing.xs,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.sm,
+    padding: spacing.sm,
+  },
+  stepDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

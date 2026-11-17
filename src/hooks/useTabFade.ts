@@ -25,7 +25,7 @@ export function useTabFade() {
   );
 
   useEffect(() => {
-    opacity.value = reduceMotion ? 1 : withTiming(1, { duration: 200 });
+    opacity.value = reduceMotion ? 1 : withTiming(1, { duration: 340 });
   }, [focusTick, reduceMotion, opacity]);
 
   const fadeStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));

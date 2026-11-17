@@ -3,7 +3,6 @@ import { AndroidImportance } from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { NOTIFICATION_DEFAULTS } from '@/constants/config';
-import { nextTriggerDate } from '@/logic/notifications';
 
 /**
  * Yerel günlük hatırlatma servisi.
@@ -52,7 +51,11 @@ export async function getNotificationPermission(): Promise<boolean> {
   return current.granted;
 }
 
-/** Sonraki tetik anında tek seferlik bildirim planlar. */
+/**
+ * Günlük hatırlatmayı her gün aynı saatte tekrarlar (DAILY trigger).
+ * Uygulama kapalıyken de sistem tarafından tetiklenir; içerik planlama
+ * anındaki son tahminden üretilir, her açılışta taze içerikle yeniden kurulur.
+ */
 export async function scheduleDailyReminder(params: {
   hour: number;
   minute: number;
@@ -63,7 +66,6 @@ export async function scheduleDailyReminder(params: {
   await ensureAndroidChannel();
   await cancelDailyReminder();
 
-  const date = nextTriggerDate(params.hour, params.minute);
   await Notifications.scheduleNotificationAsync({
     identifier: NOTIFICATION_DEFAULTS.identifier,
     content: {
@@ -71,27 +73,11 @@ export async function scheduleDailyReminder(params: {
       body: params.body,
     },
     trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date,
-      channelId: NOTIFICATION_DEFAULTS.channelId,
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: params.hour,
+      minute: params.minute,
     },
   });
-}
-
-/** Hemen bir test bildirimi gönderir; izin yoksa false döner. */
-export async function sendTestNotification(): Promise<boolean> {
-  ensureHandler();
-  await ensureAndroidChannel();
-  const granted = await getNotificationPermission();
-  if (!granted) return false;
-  await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Ne Giysem?',
-      body: 'Test bildirimi çalışıyor. 🎉',
-    },
-    trigger: null,
-  });
-  return true;
 }
 
 export async function cancelDailyReminder(): Promise<void> {

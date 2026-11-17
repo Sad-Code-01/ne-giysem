@@ -39,9 +39,9 @@ describe('widgetContent', () => {
     expect(content.suggestionTitle).toBeTruthy();
     expect(content.suggestionShort).toBeTruthy();
     expect(content.suggestionParts?.length).toBeGreaterThan(0);
-    expect(content.suggestionParts?.length).toBeLessThanOrEqual(3);
+    expect(content.suggestionParts?.length).toBeLessThanOrEqual(4);
     for (const part of content.suggestionParts ?? []) {
-      expect(['Üst', 'Dış', 'Aksesuar']).toContain(part.label);
+      expect(['İç', 'Orta', 'Dış', 'Aksesuar']).toContain(part.label);
       expect(part.value.length).toBeGreaterThan(0);
     }
   });

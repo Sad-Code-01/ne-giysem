@@ -28,7 +28,6 @@ import {
   Glass,
   GlassChip,
   GlassSegmented,
-  IconBadge,
   ScreenBackground,
 } from '@/components/glass';
 import { glassMaterial } from '@/theme/glass';
@@ -39,16 +38,14 @@ import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { locale, t } from '@/i18n';
 import { onScrollToTopRequest } from '@/lib/scrollToTop';
 import { garmentLabel } from '@/logic/garmentCatalog';
-import { garmentIcon } from '@/logic/itemIcons';
 import { adviceLines, buildDayOutfit, defaultDayOffset } from '@/logic/outfitEngine';
-import { groupOutfitItems, joinGarmentNames, uniqueLines } from '@/logic/outfitGrouping';
+import { uniqueLines } from '@/logic/outfitGrouping';
 import { buildSlotWeathers } from '@/logic/slots';
 import { getWeatherCondition, getWeatherVisual } from '@/logic/weatherCodes';
 import { warningIcon } from '@/logic/warningIcons';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { radius, SCREEN_PADDING, spacing } from '@/theme/spacing';
 import { FONT_FAMILY, typography } from '@/theme/typography';
-import type { HourlyPoint } from '@/types';
 
 function formatClock(epochMs: number): string {
   return new Date(epochMs).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
@@ -93,12 +90,6 @@ export default function TodayScreen() {
     () => (snapshot && dayOutfit ? buildSlotWeathers(snapshot, dayOutfit.date, outfitProfile) : []),
     [snapshot, dayOutfit, outfitProfile]
   );
-
-  const hourlyStrip = useMemo<HourlyPoint[]>(() => {
-    if (!snapshot || !dayOutfit) return [];
-    return snapshot.hourly.filter((point) => point.time.startsWith(dayOutfit.date)).slice(0, 24);
-  }, [snapshot, dayOutfit]);
-
   const showOffline = isOffline || isOnline === false;
 
   const backdrop = !snapshot
@@ -115,7 +106,7 @@ export default function TodayScreen() {
         <WelcomeView onUseLocation={() => void loadMyLocation()} isBusy={false} />
       </View>
     );
-  } else if ((status === 'loading' || status === 'idle') && !snapshot) {
+  } else if (status === 'loading' || status === 'idle') {
     body = (
       <View style={[styles.centered, { paddingTop: insets.top }]}>
         <LoadingView />
@@ -133,13 +124,6 @@ export default function TodayScreen() {
     const wind = Math.round(daily?.windSpeedMax ?? current.windSpeed);
     const rain = Math.round(daily?.precipitationProbabilityMax ?? current.precipitationProbability);
     const condition = getWeatherCondition(current.weatherCode).label;
-    const mainSlot =
-      dayOutfit.slots.find((slot) => slot.slot === 'ogle') ??
-      dayOutfit.slots[1] ??
-      dayOutfit.slots[0];
-    const outfitItems = mainSlot?.items ?? [];
-    const groups = groupOutfitItems(outfitItems);
-
     // Açıklama: en fazla iki satır + gün notu; aynı cümle iki kez görünmez.
     const description = uniqueLines([
       ...adviceLines(dayOutfit),
@@ -210,8 +194,72 @@ export default function TodayScreen() {
           onChange={(next) => setDayChoice(next)}
         />
 
-        {/* Hero kart: durum/min-max, dev sıcaklık, hissedilen, rüzgâr/nem/yağış */}
+        {/* Kıyafet önerisi: büyük başlık + açıklama + sabah/öğle/akşam saatlik şerit */}
         <Animated.View entering={FadeInDown.duration(300).delay(60)}>
+          <Glass blur>
+            <Text style={[typography.titleL, { color: theme.text }]} maxFontSizeMultiplier={1.15}>
+              {dayOutfit.title}
+            </Text>
+            {description ? (
+              <Text style={[typography.body, styles.cardDesc, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3} numberOfLines={3}>
+                {description}
+              </Text>
+            ) : null}
+            <View style={[styles.slotStrip, { borderTopColor: 'rgba(120,140,165,0.28)' }]}>
+              {dayOutfit.slots.map((slot, index) => {
+                const weather = slotWeathers.find((item) => item.slot === slot.slot);
+                const muted = weather?.past ?? false;
+                const ink = muted ? theme.textSecondary : theme.text;
+                return (
+                  <View
+                    key={slot.slot}
+                    style={[styles.slotCell, index > 0 && styles.slotCellDivider]}
+                  >
+                    <Text style={[typography.micro, { color: theme.textSecondary }]}>{t(`slot.${slot.slot}`)}</Text>
+                    <Text style={[typography.caption, { color: ink }]} numberOfLines={1}>
+                      {weather?.hourLabel}
+                    </Text>
+                    {weather ? (
+                      <WeatherIcon
+                        kind={getWeatherVisual(weather.dominantCode, weather.isDay).kind}
+                        isDay={weather.isDay}
+                        size={20}
+                        color={ink}
+                      />
+                    ) : null}
+                    <Text style={[typography.titleS, { color: ink }]}>
+                      {weather ? `${Math.round(weather.avgApparent)}°` : ''}
+                    </Text>
+                    <Text style={[typography.micro, { color: theme.textSecondary }]} numberOfLines={1}>
+                      {garmentLabel(slot.hero)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+            {chipWarnings.length > 0 ? (
+              <View style={styles.chipWrap}>
+                {chipWarnings.map((warning) => (
+                  <GlassChip key={warning} label={warning} icon={warningIcon(warning)} tone="amber" />
+                ))}
+              </View>
+            ) : null}
+            <Pressable
+              onPress={() => router.push('/oneri')}
+              accessibilityRole="button"
+              accessibilityLabel={t('outfit.viewDetails')}
+              style={({ pressed }) => [styles.detailLink, pressed && styles.detailLinkPressed]}
+            >
+              <Text style={[typography.caption, { color: theme.tabActive }]}>
+                {t('outfit.viewDetails')}
+              </Text>
+              <CaretRight size={16} color={theme.tabActive} weight="bold" />
+            </Pressable>
+          </Glass>
+        </Animated.View>
+
+        {/* Hero kart: durum/min-max, dev sıcaklık, hissedilen, rüzgâr/nem/yağış */}
+        <Animated.View entering={FadeInDown.duration(300).delay(120)}>
           <Glass blur cornerRadius={radius.card}>
             <View style={styles.heroTop}>
               <WeatherIcon
@@ -261,114 +309,6 @@ export default function TodayScreen() {
           </Glass>
         </Animated.View>
 
-        {/* Kıyafet kartı: başlık + tek paragraf + kategoriye göre birleşik satırlar + uyarı çipleri */}
-        <Animated.View entering={FadeInDown.duration(300).delay(120)}>
-          <Glass>
-            <Text style={[typography.titleS, { color: theme.text }]} maxFontSizeMultiplier={1.2}>
-              {dayOutfit.title}
-            </Text>
-            {description ? (
-              <Text style={[typography.body, styles.cardDesc, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
-                {description}
-              </Text>
-            ) : null}
-            <View style={styles.outfitRows}>
-              {groups.map((group) => {
-                const representative =
-                  group.items.reduce((best, item) => (item.warmth > best.warmth ? item : best), group.items[0]);
-                const rowIcon = garmentIcon(representative);
-                const RowIcon = rowIcon;
-                return (
-                  <View key={group.key} style={styles.outfitRow}>
-                    <IconBadge icon={RowIcon} size={18} boxSize={36} />
-                    <View style={styles.outfitRowText}>
-                      <Text style={[typography.micro, { color: theme.textSecondary }]} numberOfLines={1}>
-                        {t(group.labelKey)}
-                      </Text>
-                      <Text style={[typography.body, { color: theme.text }]} maxFontSizeMultiplier={1.2}>
-                        {joinGarmentNames(group)}
-                      </Text>
-                    </View>
-                    <CaretRight size={16} color={theme.textSecondary} weight="regular" />
-                  </View>
-                );
-              })}
-            </View>
-            {chipWarnings.length > 0 ? (
-              <View style={styles.chipWrap}>
-                {chipWarnings.map((warning) => (
-                  <GlassChip key={warning} label={warning} icon={warningIcon(warning)} tone="amber" />
-                ))}
-              </View>
-            ) : null}
-          </Glass>
-        </Animated.View>
-
-        {/* Gün boyu: sabah/öğle/akşam cam hücreleri */}
-        <Animated.View entering={FadeInDown.duration(300).delay(180)}>
-          <Glass padded={false} contentStyle={styles.slotsCard}>
-            <View style={styles.slots}>
-              {dayOutfit.slots.map((slot, index) => {
-                const weather = slotWeathers.find((item) => item.slot === slot.slot);
-                const muted = weather?.past ?? false;
-                const ink = muted ? theme.textSecondary : theme.text;
-                const hero = slot.hero;
-                return (
-                  <View
-                    key={slot.slot}
-                    style={[
-                      styles.slot,
-                      index > 0 && { borderLeftWidth: 1, borderLeftColor: 'rgba(120,140,165,0.28)' },
-                    ]}
-                  >
-                    <Text style={[typography.micro, { color: theme.textSecondary }]}>{t(`slot.${slot.slot}`)}</Text>
-                    <Text style={[typography.caption, { color: ink }]} numberOfLines={1}>
-                      {weather?.hourLabel}
-                    </Text>
-                    {weather ? (
-                      <WeatherIcon
-                        kind={getWeatherVisual(weather.dominantCode, weather.isDay).kind}
-                        isDay={weather.isDay}
-                        size={22}
-                        color={ink}
-                      />
-                    ) : null}
-                    <Text style={[typography.titleS, { color: ink }]}>
-                      {weather ? `${Math.round(weather.avgApparent)}°` : ''}
-                    </Text>
-                    <View style={[styles.slotChip, { borderColor: headerButtonMaterial.border, backgroundColor: headerButtonMaterial.fill }]}>
-                      <Text style={[typography.micro, { color: theme.text }]} numberOfLines={1}>
-                        {garmentLabel(hero)}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          </Glass>
-        </Animated.View>
-
-        {/* Saatlik şerit */}
-        {hourlyStrip.length > 0 ? (
-          <View style={styles.hourlyWrap}>
-            <Text style={[typography.titleS, { color: theme.text }]}>{t('hourly.title')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.hourlyRow}>
-              {hourlyStrip.map((point, index) => {
-                const visual = getWeatherVisual(point.weatherCode, point.isDay);
-                return (
-                  <Glass key={point.time} variant="chip" cornerRadius={radius.sm} padded={false} contentStyle={styles.hourCell}>
-                    <Text style={[typography.micro, { color: theme.textSecondary }]}>
-                      {index === 0 ? t('hourly.now') : point.time.slice(11, 16)}
-                    </Text>
-                    <WeatherIcon kind={visual.kind} isDay={point.isDay} size={20} color={theme.textSecondary} />
-                    <Text style={[typography.caption, { color: theme.text }]}>{`${Math.round(point.temperature)}°`}</Text>
-                  </Glass>
-                );
-              })}
-            </ScrollView>
-          </View>
-        ) : null}
-
         {showOffline ? (
           <Text style={[typography.caption, { color: theme.text }]}>
             {lastUpdatedLabel
@@ -384,7 +324,7 @@ export default function TodayScreen() {
   }
 
   return (
-    <ScreenBackground kind={backdrop.kind} isDay={backdrop.isDay}>
+    <ScreenBackground kind={backdrop.kind}>
       <StatusBar style={theme.isDark ? 'light' : 'dark'} />
       <Animated.View style={[styles.flex, fadeStyle]}>{body}</Animated.View>
     </ScreenBackground>
@@ -462,19 +402,21 @@ const styles = StyleSheet.create({
   cardDesc: {
     marginTop: spacing.xs,
   },
-  outfitRows: {
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  outfitRow: {
+  slotStrip: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 44,
+    borderTopWidth: 1,
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
   },
-  outfitRowText: {
+  slotCell: {
     flex: 1,
-    gap: 1,
+    gap: 2,
+    alignItems: 'flex-start',
+  },
+  slotCellDivider: {
+    borderLeftWidth: 1,
+    borderLeftColor: 'rgba(120,140,165,0.28)',
+    paddingLeft: spacing.sm,
   },
   chipWrap: {
     flexDirection: 'row',
@@ -482,38 +424,16 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginTop: spacing.md,
   },
-  slotsCard: {
-    padding: spacing.md,
-  },
-  slots: {
+  detailLink: {
     flexDirection: 'row',
-  },
-  slot: {
-    flex: 1,
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    alignItems: 'flex-start',
-  },
-  slotChip: {
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-    marginTop: spacing.xs,
-  },
-  hourlyWrap: {
-    gap: spacing.sm,
-  },
-  hourlyRow: {
-    gap: spacing.sm,
-    paddingRight: SCREEN_PADDING,
-  },
-  hourCell: {
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minWidth: 60,
+    minHeight: 44,
+    marginTop: spacing.sm,
+  },
+  detailLinkPressed: {
+    opacity: 0.6,
   },
   footer: {
     textAlign: 'center',

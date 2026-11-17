@@ -45,9 +45,17 @@ function asString(value: unknown, field: string): string {
   throw new ServiceError('parse', `${field} alanı geçersiz.`);
 }
 
-function asNumberArray(value: unknown, field: string): number[] {
-  if (Array.isArray(value) && value.every((item) => typeof item === 'number')) {
-    return value as number[];
+/**
+ * Sayı dizisi — Open-Meteo tahmin penceresinin ucunda (son saat/gün)
+ * `null` döndürebilir; bu durumda ilgili kayıtlar atlanır, tüm istek
+ * parse hatasıyla düşmez.
+ */
+function asNumberArray(value: unknown, field: string): (number | null)[] {
+  if (
+    Array.isArray(value) &&
+    value.every((item) => item === null || (typeof item === 'number' && Number.isFinite(item)))
+  ) {
+    return value as (number | null)[];
   }
   throw new ServiceError('parse', `${field} dizisi geçersiz.`);
 }
@@ -55,6 +63,16 @@ function asNumberArray(value: unknown, field: string): number[] {
 function asStringArray(value: unknown, field: string): string[] {
   if (Array.isArray(value) && value.every((item) => typeof item === 'string')) {
     return value as string[];
+  }
+  throw new ServiceError('parse', `${field} dizisi geçersiz.`);
+}
+
+function asNullableStringArray(value: unknown, field: string): (string | null)[] {
+  if (
+    Array.isArray(value) &&
+    value.every((item) => item === null || typeof item === 'string')
+  ) {
+    return value as (string | null)[];
   }
   throw new ServiceError('parse', `${field} dizisi geçersiz.`);
 }
@@ -132,25 +150,43 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
     weatherCode: asNumber(currentRaw.weather_code, 'current.weather_code'),
     windSpeed: asNumber(currentRaw.wind_speed_10m, 'current.wind_speed_10m'),
     isDay: asNumber(currentRaw.is_day, 'current.is_day') === 1,
-    precipitationProbability: hourlyPrecipitation[hourIndex],
-    uvIndex: hourlyUv[hourIndex],
+    precipitationProbability: hourlyPrecipitation[hourIndex] ?? 0,
+    uvIndex: hourlyUv[hourIndex] ?? 0,
   };
 
   // Saatlik seri: yalnızca bugünden sonrası (geçmiş saatler elenir, dünkü veriler gerekmez).
+  // API'nin veri üretmediği saatler (null) atlanır.
   const hourly: HourlyPoint[] = [];
   for (let index = 0; index < hourlyLength; index += 1) {
     const time = hourlyTimes[index];
     if (time.slice(0, 10) < todayKey) continue;
     if (time.slice(0, 13) < nowHourKey) continue;
 
+    const temperature = hourlyTemperature[index];
+    const apparentTemperature = hourlyApparent[index];
+    const precipitationProbability = hourlyPrecipitation[index];
+    const weatherCode = hourlyCodes[index];
+    const windSpeed = hourlyWind[index];
+    const uvIndex = hourlyUv[index];
+    if (
+      temperature == null ||
+      apparentTemperature == null ||
+      precipitationProbability == null ||
+      weatherCode == null ||
+      windSpeed == null ||
+      uvIndex == null
+    ) {
+      continue;
+    }
+
     hourly.push({
       time,
-      temperature: hourlyTemperature[index],
-      apparentTemperature: hourlyApparent[index],
-      precipitationProbability: hourlyPrecipitation[index],
-      weatherCode: hourlyCodes[index],
-      windSpeed: hourlyWind[index],
-      uvIndex: hourlyUv[index],
+      temperature,
+      apparentTemperature,
+      precipitationProbability,
+      weatherCode,
+      windSpeed,
+      uvIndex,
       isDay: hourlyIsDay[index] === 1,
     });
   }
@@ -168,8 +204,8 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
     'daily.precipitation_probability_max'
   );
   const dailyUv = asNumberArray(dailyRaw.uv_index_max, 'daily.uv_index_max');
-  const dailySunrise = asStringArray(dailyRaw.sunrise, 'daily.sunrise');
-  const dailySunset = asStringArray(dailyRaw.sunset, 'daily.sunset');
+  const dailySunrise = asNullableStringArray(dailyRaw.sunrise, 'daily.sunrise');
+  const dailySunset = asNullableStringArray(dailyRaw.sunset, 'daily.sunset');
 
   const dailyLength = dailyTimes.length;
   assertSameLength('daily.temperature_2m_max', dailyLength, dailyMax.length);
@@ -183,24 +219,49 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
   assertSameLength('daily.sunrise', dailyLength, dailySunrise.length);
   assertSameLength('daily.sunset', dailyLength, dailySunset.length);
 
-  if (dailyLength === 0) {
-    throw new ServiceError('parse', 'Günlük tahmin bulunamadı.');
+  // API'nin veri üretmediği günler (null) atlanır; hafta görünümü ilk 7 günü kullanır.
+  const daily: DailySummary[] = [];
+  for (let index = 0; index < dailyLength; index += 1) {
+    const temperatureMax = dailyMax[index];
+    const temperatureMin = dailyMin[index];
+    const temperatureMean = dailyMean[index];
+    const weatherCode = dailyCodes[index];
+    const windSpeedMax = dailyWind[index];
+    const precipitationSum = dailyPrecipSum[index];
+    const precipitationProbabilityMax = dailyPrecipitation[index];
+    const uvIndexMax = dailyUv[index];
+    if (
+      temperatureMax == null ||
+      temperatureMin == null ||
+      temperatureMean == null ||
+      weatherCode == null ||
+      windSpeedMax == null ||
+      precipitationSum == null ||
+      precipitationProbabilityMax == null ||
+      uvIndexMax == null
+    ) {
+      continue;
+    }
+
+    daily.push({
+      date: dailyTimes[index],
+      temperatureMax,
+      temperatureMin,
+      temperatureMean,
+      weatherCode,
+      windSpeedMax,
+      precipitationSum,
+      precipitationProbabilityMax,
+      uvIndexMax,
+      sunrise: dailySunrise[index] ?? '',
+      sunset: dailySunset[index] ?? '',
+      isPast: dailyTimes[index] < todayKey,
+    });
   }
 
-  const daily: DailySummary[] = dailyTimes.map((date, index) => ({
-    date,
-    temperatureMax: dailyMax[index],
-    temperatureMin: dailyMin[index],
-    temperatureMean: dailyMean[index],
-    weatherCode: dailyCodes[index],
-    windSpeedMax: dailyWind[index],
-    precipitationSum: dailyPrecipSum[index],
-    precipitationProbabilityMax: dailyPrecipitation[index],
-    uvIndexMax: dailyUv[index],
-    sunrise: dailySunrise[index],
-    sunset: dailySunset[index],
-    isPast: date < todayKey,
-  }));
+  if (daily.length === 0) {
+    throw new ServiceError('parse', 'Günlük tahmin bulunamadı.');
+  }
 
   return {
     place,

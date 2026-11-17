@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 import type { AppTheme } from '@/theme/tokens';
 import type { IllustrationKind } from '@/types';
 
@@ -36,10 +38,12 @@ function material(theme: AppTheme, fill: string, border: string, highlight: stri
     fallbackFill: fallback,
     shadow: {
       shadowColor: '#000',
-      shadowOpacity: theme.isDark ? 0.3 : 0.12,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 8 },
-      elevation: theme.isDark ? 8 : 6,
+      shadowOpacity: theme.isDark ? 0.12 : 0.06,
+      shadowRadius: theme.isDark ? 14 : 16,
+      shadowOffset: { width: 0, height: 6 },
+      // Android'de elevation, opak cam dolgu çevresinde koyu bir "çerçeve"
+      // gibi render ediliyor — gölge yalnızca iOS'ta kalır.
+      elevation: Platform.OS === 'android' ? 0 : 3,
     },
   };
 }
@@ -49,29 +53,30 @@ export function glassMaterial(theme: AppTheme, variant: GlassVariant = 'surface'
   if (theme.isDark) {
     switch (variant) {
       case 'chip':
-        return material(theme, 'rgba(255,255,255,0.07)', 'rgba(255,255,255,0.14)', 'rgba(255,255,255,0.22)', 'rgba(18,26,36,0.92)');
+        return material(theme, 'rgba(255,255,255,0.07)', 'rgba(255,255,255,0.14)', 'rgba(255,255,255,0.22)', 'rgba(18,26,36,0.95)');
       case 'pill':
-        return material(theme, 'rgba(255,255,255,0.10)', 'rgba(255,255,255,0.16)', 'rgba(255,255,255,0.28)', 'rgba(18,26,36,0.92)');
+        // Sekme çubuğu: neredeyse opak — arkadaki içerik karartı yapmasın.
+        return material(theme, 'rgba(13,20,30,0.98)', 'rgba(255,255,255,0.14)', 'rgba(255,255,255,0.10)', 'rgba(13,20,30,0.98)');
       case 'sheet':
         // Sheet'ler arkadaki içerik okunmasın diye daha opak.
-        return material(theme, 'rgba(18,26,36,0.94)', 'rgba(255,255,255,0.16)', 'rgba(255,255,255,0.28)', 'rgba(18,26,36,0.97)');
+        return material(theme, 'rgba(18,26,36,0.94)', 'rgba(255,255,255,0.16)', 'rgba(255,255,255,0.28)', 'rgba(18,26,36,0.98)');
       case 'input':
-        return material(theme, 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.16)', 'rgba(255,255,255,0.24)', 'rgba(18,26,36,0.92)');
+        return material(theme, 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.16)', 'rgba(255,255,255,0.24)', 'rgba(18,26,36,0.95)');
       default:
-        return material(theme, 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.16)', 'rgba(255,255,255,0.28)', 'rgba(18,26,36,0.92)');
+        return material(theme, 'rgba(255,255,255,0.08)', 'rgba(255,255,255,0.16)', 'rgba(255,255,255,0.28)', 'rgba(18,26,36,0.95)');
     }
   }
   switch (variant) {
     case 'chip':
-      return material(theme, 'rgba(255,255,255,0.50)', 'rgba(255,255,255,0.80)', 'rgba(255,255,255,0.90)', 'rgba(246,249,252,0.92)');
+      return material(theme, 'rgba(255,255,255,0.44)', 'rgba(255,255,255,0.80)', 'rgba(255,255,255,0.90)', 'rgba(246,249,252,0.95)');
     case 'pill':
-      return material(theme, 'rgba(255,255,255,0.45)', 'rgba(255,255,255,0.80)', 'rgba(255,255,255,0.90)', 'rgba(246,249,252,0.92)');
+      return material(theme, 'rgba(244,248,252,0.98)', 'rgba(255,255,255,0.90)', 'rgba(255,255,255,0.95)', 'rgba(244,248,252,0.98)');
     case 'sheet':
-      return material(theme, 'rgba(246,249,252,0.92)', 'rgba(255,255,255,0.85)', 'rgba(255,255,255,0.95)', 'rgba(246,249,252,0.96)');
+      return material(theme, 'rgba(246,249,252,0.95)', 'rgba(255,255,255,0.85)', 'rgba(255,255,255,0.95)', 'rgba(246,249,252,0.98)');
     case 'input':
-      return material(theme, 'rgba(255,255,255,0.55)', 'rgba(255,255,255,0.80)', 'rgba(255,255,255,0.90)', 'rgba(246,249,252,0.92)');
+      return material(theme, 'rgba(255,255,255,0.48)', 'rgba(255,255,255,0.80)', 'rgba(255,255,255,0.90)', 'rgba(246,249,252,0.95)');
     default:
-      return material(theme, 'rgba(255,255,255,0.48)', 'rgba(255,255,255,0.80)', 'rgba(255,255,255,0.90)', 'rgba(246,249,252,0.92)');
+      return material(theme, 'rgba(255,255,255,0.42)', 'rgba(255,255,255,0.80)', 'rgba(255,255,255,0.90)', 'rgba(246,249,252,0.95)');
   }
 }
 
@@ -81,7 +86,7 @@ export function glassIndicatorFill(theme: AppTheme): string {
 }
 
 export function glassIndicatorBorder(theme: AppTheme): string {
-  return theme.isDark ? 'rgba(255,255,255,0.10)' : 'rgba(20,40,70,0.08)';
+  return theme.isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,40,70,0.05)';
 }
 
 /* ------------------------------------------------------------------ */

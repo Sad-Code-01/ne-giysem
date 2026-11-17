@@ -18,9 +18,8 @@ import type { IllustrationKind } from '@/types';
 
 interface ScreenBackgroundProps {
   children: ReactNode;
-  /** Hava grubu (görsel türü). */
+  /** Hava grubu (görsel türü) — palet ailesini belirler. */
   kind?: IllustrationKind;
-  isDay?: boolean;
 }
 
 const ORB_SIZE = 340;
@@ -67,7 +66,7 @@ function Orb({
           height: size,
           borderRadius: size / 2,
           backgroundColor: color,
-          opacity: 0.35,
+          opacity: 0.2,
         },
         style,
       ]}
@@ -82,12 +81,14 @@ function Orb({
 export function ScreenBackground({
   children,
   kind = 'cloudy',
-  isDay = true,
 }: ScreenBackgroundProps) {
   const insets = useSafeAreaInsets();
   const theme = useAppTheme();
   const reduceMotion = useReducedMotion();
-  const palette = skyPalette(kind, isDay);
+  // Açık tema her zaman gündüz, koyu tema her zaman gece paleti kullanır;
+  // hava durumu yalnızca palet ailesini (güneşli/yağmur/kar/sis) seçer.
+  // Böylece açık temada gece havası koyu zemin, koyu temada gündüz açık zemin üretmez.
+  const palette = skyPalette(kind, !theme.isDark);
   // Palet değişiminde 600ms fade-in: altta zemin rengi kalır.
 
   const scrimColors: readonly [string, string] = [

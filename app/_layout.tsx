@@ -19,6 +19,7 @@ import { isConsentValid } from '@/logic/consent';
 import { getConsent } from '@/storage/consent';
 import { getOnboardingDone } from '@/storage/cache';
 import { useAppTheme } from '@/theme/useAppTheme';
+import { loadThemeMode } from '@/theme/themeMode';
 
 type Gate = 'loading' | 'onboarding' | 'app';
 
@@ -51,11 +52,21 @@ export default function RootLayout() {
     DMSans_700Bold,
   });
   const [gate, setGate] = useState<Gate>('loading');
+  // Tema modu da splash kapanmadan yüklenir — yoksa kayıtlı koyu tema
+  // varken önce sistem teması çizilip anında değişir (parlama).
+  const [themeLoaded, setThemeLoaded] = useState(false);
   const theme = useAppTheme();
 
   // Fontlar yüklenene kadar native splash açık kalır.
   useEffect(() => {
     void SplashScreen.preventAutoHideAsync();
+    let cancelled = false;
+    void loadThemeMode().then(() => {
+      if (!cancelled) setThemeLoaded(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Onay + karşılama durumu: ikisi de tamamsa ana akış, değilse karşılama.
@@ -71,7 +82,7 @@ export default function RootLayout() {
   }, []);
 
   const fontsReady = fontsLoaded || fontError != null;
-  const ready = fontsReady && gate !== 'loading';
+  const ready = fontsReady && gate !== 'loading' && themeLoaded;
 
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();
@@ -98,6 +109,8 @@ export default function RootLayout() {
             <Stack.Screen name="ayarlar/usume" />
             <Stack.Screen name="ayarlar/konumlar" />
             <Stack.Screen name="ayarlar/bildirimler" />
+            <Stack.Screen name="ayarlar/bilgi" />
+            <Stack.Screen name="ayarlar/widgetler" />
             <Stack.Screen
               name="sehir-ara"
               options={{

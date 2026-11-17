@@ -1,4 +1,5 @@
 import { buildDayOutfit } from '@/logic/outfitEngine';
+import { garmentLabel } from '@/logic/garmentCatalog';
 import { t } from '@/i18n';
 import type { OutfitProfile, WeatherSnapshot } from '@/types';
 import type { NotificationPeriod } from '@/storage/profileStore';
@@ -22,6 +23,8 @@ export function nextTriggerDate(hour: number, minute: number, from: Date = new D
 /**
  * Hatırlatma gövdesi: akşam → yarının, sabah → bugünün kombini.
  * `buildDayOutfit` çıktısı kullanılır; tahmin yoksa çağıran planlamaz.
+ * Gövde, günün dilimlerinin (sabah/öğle/akşam) öneri ve hissedilen
+ * sıcaklığını tek bildirimde özetler.
  */
 export function reminderContent(
   snapshot: WeatherSnapshot,
@@ -31,8 +34,19 @@ export function reminderContent(
   const dayOffset = period === 'aksam' ? 1 : 0;
   const day = buildDayOutfit(snapshot, profile, dayOffset);
   const label = period === 'aksam' ? t('notif.tomorrow') : t('notif.today');
+
+  const slotLines = (day.slots ?? []).map((slot) => {
+    const slotLabel = t(`slot.${slot.slot}` as const);
+    const feels = Math.round(slot.effectiveTemp);
+    return `${slotLabel} ${feels}° · ${garmentLabel(slot.hero)}`;
+  });
+
+  const body = slotLines.length
+    ? `${label}: ${day.title}\n${slotLines.join('\n')}`
+    : `${label}: ${day.title}`;
+
   return {
     title: t('notif.title'),
-    body: `${label}: ${day.title}`,
+    body,
   };
 }

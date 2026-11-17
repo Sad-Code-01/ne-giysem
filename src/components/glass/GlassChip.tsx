@@ -25,6 +25,7 @@ export function GlassChip({ label, icon: IconComponent, tone = 'default' }: Glas
     <View
       style={[
         styles.chip,
+        amber && styles.chipAmber,
         {
           backgroundColor: amber ? theme.accent : material.fill,
           borderColor: amber ? 'transparent' : material.border,
@@ -32,7 +33,7 @@ export function GlassChip({ label, icon: IconComponent, tone = 'default' }: Glas
       ]}
     >
       {IconComponent ? <IconComponent size={14} color={iconColor} weight="bold" /> : null}
-      <Text style={[typography.micro, { color: fg }]} numberOfLines={1}>
+      <Text style={[typography.micro, { color: fg }]} numberOfLines={amber ? undefined : 1}>
         {label}
       </Text>
     </View>
@@ -49,5 +50,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     alignSelf: 'flex-start',
+  },
+  chipAmber: {
+    // Uyarı metinleri cümle uzunluğunda: tam genişlikte alt satıra kayar,
+    // üç nokta ile kesilmez.
+    alignSelf: 'stretch',
+    alignItems: 'flex-start',
   },
 });

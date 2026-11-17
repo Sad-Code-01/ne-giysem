@@ -1,6 +1,6 @@
-import { MagnifyingGlass, MapPin, X } from 'phosphor-react-native';
+import { CaretDown, Check, Globe, MagnifyingGlass, MapPin, X } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import {
   ActivityIndicator,
@@ -14,10 +14,12 @@ import {
 } from 'react-native';
 
 import { SolidSheet } from '@/components/SolidSheet';
+import { SheetModal } from '@/components/SheetModal';
 import { Glass, GlassInput } from '@/components/glass';
+import { countryOptions } from '@/constants/countries';
 import { MIN_SEARCH_LENGTH, SEARCH_DEBOUNCE_MS } from '@/constants/config';
 import { useProfile } from '@/hooks/useProfile';
-import { t } from '@/i18n';
+import { locale, t } from '@/i18n';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { searchCities } from '@/services/geocodingService';
 import { useAppTheme } from '@/theme/useAppTheme';
@@ -32,6 +34,8 @@ import type { Place } from '@/types';
 export function CitySearchSheet() {
   const theme = useAppTheme();
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const fromOnboarding = from === 'onboarding';
   const { selectPlace } = useWeatherContext();
   const { addCity } = useProfile();
 
@@ -39,8 +43,15 @@ export function CitySearchSheet() {
   const [results, setResults] = useState<Place[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // Ülke süzgeci: varsayılan Türkiye; null → tüm ülkeler.
+  const [countryCode, setCountryCode] = useState<string | null>('TR');
+  const [countrySheetOpen, setCountrySheetOpen] = useState(false);
   const requestIdRef = useRef(0);
   const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
+
+  const countries = countryOptions(locale());
+  const selectedCountry =
+    countries.find((country) => country.code === countryCode) ?? countries[0];
 
   const trimmed = query.trim();
   const isQueryReady = trimmed.length >= MIN_SEARCH_LENGTH;
@@ -65,32 +76,43 @@ export function CitySearchSheet() {
     setIsSearching(text.trim().length >= MIN_SEARCH_LENGTH);
   };
 
+  /** Aramayı hemen çalıştırır; istek kimliği eski sonuçları geçersiz kılar. */
+  const runSearch = (text: string): void => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+
+    searchCities(text, countryCode)
+      .then((places) => {
+        if (requestId !== requestIdRef.current) return;
+        setResults(places);
+      })
+      .catch(() => {
+        if (requestId !== requestIdRef.current) return;
+        setResults([]);
+        setErrorMessage(t('search.error'));
+      })
+      .finally(() => {
+        if (requestId !== requestIdRef.current) return;
+        setIsSearching(false);
+      });
+  };
+
   // Geciktirilmiş arama (debounce) + eski istekleri iptal et.
+  // Ülke değişince de yeniden ara.
   useEffect(() => {
     if (trimmed.length < MIN_SEARCH_LENGTH) return;
 
-    const timer = setTimeout(() => {
-      const requestId = requestIdRef.current + 1;
-      requestIdRef.current = requestId;
-
-      searchCities(trimmed)
-        .then((places) => {
-          if (requestId !== requestIdRef.current) return;
-          setResults(places);
-        })
-        .catch(() => {
-          if (requestId !== requestIdRef.current) return;
-          setResults([]);
-          setErrorMessage(t('search.error'));
-        })
-        .finally(() => {
-          if (requestId !== requestIdRef.current) return;
-          setIsSearching(false);
-        });
-    }, SEARCH_DEBOUNCE_MS);
-
+    const timer = setTimeout(() => runSearch(trimmed), SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [trimmed]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trimmed, countryCode]);
+
+  const handleSubmit = (): void => {
+    // Klavye önerisi/boşluk sonrası debounce beklemeden hemen ara.
+    if (trimmed.length >= MIN_SEARCH_LENGTH) {
+      runSearch(trimmed);
+    }
+  };
 
   const handleClose = (): void => {
     resetSearch();
@@ -104,7 +126,18 @@ export function CitySearchSheet() {
     resetSearch();
     void selectPlace(place);
     void addCity(place);
-    router.back();
+    // Karşılama akışından açıldıysa yalnızca sheet'i kapat —AsyncStorage
+    // okuması beklemeden deterministik geri dönüş (boş sayfa takılması yok).
+    // Kurulum tamamlandıysa doğrudan ana ekrana geç.
+    if (fromOnboarding) {
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/karsilama');
+      }
+    } else {
+      router.dismissTo('/');
+    }
   };
 
   let body: ReactNode;
@@ -198,6 +231,7 @@ export function CitySearchSheet() {
   }
 
   return (
+    <>
     <SolidSheet topPadding={spacing.lg}>
       {/* Başlık + kapat */}
       <View style={styles.headerRow}>
@@ -217,6 +251,21 @@ export function CitySearchSheet() {
         </Pressable>
       </View>
 
+      {/* Ülke süzgeci: varsayılan Türkiye, dokununca ülke listesi açılır */}
+      <Pressable
+        onPress={() => setCountrySheetOpen(true)}
+        accessibilityRole="button"
+        accessibilityLabel={`${t('search.country')}: ${locale().startsWith('tr') ? selectedCountry.tr : selectedCountry.en}`}
+        style={({ pressed }) => [styles.countryRow, pressed && styles.rowPressed]}
+      >
+        <Globe size={16} color={theme.textSecondary} weight="regular" />
+        <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('search.country')}</Text>
+        <Text style={[typography.caption, { color: theme.text, flex: 1 }]} numberOfLines={1}>
+          {locale().startsWith('tr') ? selectedCountry.tr : selectedCountry.en}
+        </Text>
+        <CaretDown size={14} color={theme.textSecondary} weight="regular" />
+      </Pressable>
+
       {/* Arama alanı — her zaman görünür */}
       <GlassInput
         inputRef={inputRef}
@@ -226,10 +275,43 @@ export function CitySearchSheet() {
         icon={MagnifyingGlass}
         onClear={() => handleChangeText('')}
         clearLabel={t('search.clear')}
+        onSubmitEditing={handleSubmit}
       />
 
       {body}
     </SolidSheet>
+
+    <SheetModal
+      visible={countrySheetOpen}
+      onClose={() => setCountrySheetOpen(false)}
+      title={t('search.countryTitle')}
+    >
+      <FlatList
+        data={countries}
+        style={styles.countryList}
+        keyboardShouldPersistTaps="handled"
+        keyExtractor={(item) => item.code ?? 'all'}
+        renderItem={({ item }) => {
+          const label = locale().startsWith('tr') ? item.tr : item.en;
+          const active = item.code === countryCode;
+          return (
+            <Pressable
+              onPress={() => {
+                setCountryCode(item.code);
+                setCountrySheetOpen(false);
+              }}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+              style={({ pressed }) => [styles.countryItem, pressed && styles.rowPressed]}
+            >
+              <Text style={[typography.body, { color: theme.text, flex: 1 }]}>{label}</Text>
+              {active ? <Check size={18} color={theme.primary} weight="bold" /> : null}
+            </Pressable>
+          );
+        }}
+      />
+    </SheetModal>
+    </>
   );
 }
 
@@ -246,6 +328,24 @@ const styles = StyleSheet.create({
     height: MIN_TOUCH_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  countryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: MIN_TOUCH_SIZE,
+    paddingHorizontal: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  countryList: {
+    maxHeight: 380,
+  },
+  countryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: MIN_TOUCH_SIZE,
+    paddingVertical: spacing.xs,
   },
   state: {
     alignItems: 'center',

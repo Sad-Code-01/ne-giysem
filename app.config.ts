@@ -53,14 +53,14 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'automatic',
   ios: {
     supportsTablet: false,
-    bundleIdentifier: 'com.sadik.negiysem',
+    bundleIdentifier: 'com.sadcode.negiysem',
     infoPlist: {
       NSLocationWhenInUseUsageDescription:
         'Bulunduğun yerdeki hava durumunu gösterip bugün ne giymen gerektiğini söyleyebilmemiz için konumuna ihtiyacımız var.',
     },
   },
   android: {
-    package: 'com.sadik.negiysem',
+    package: 'com.sadcode.negiysem',
     softwareKeyboardLayoutMode: 'resize',
     adaptiveIcon: {
       // foreground: assets/icon.png (1024×1024 RGBA — güvenli bölgeye dikkat)

@@ -54,7 +54,7 @@ export function SmallWidget({ content }: SmallWidgetProps) {
         width: 'match_parent',
         backgroundGradient: { from: palette.bgFrom, to: palette.bgTo, orientation: 'TOP_BOTTOM' },
         borderRadius: 24,
-        padding: 16,
+        padding: 14,
         flexDirection: 'column',
       }}
     >
@@ -71,11 +71,11 @@ export function SmallWidget({ content }: SmallWidgetProps) {
           <TextWidget
             text={content.placeName}
             maxLines={1}
-            style={{ fontSize: 12, color: palette.textSecondary }}
+            style={{ fontSize: 11, color: palette.textSecondary }}
           />
         </FlexWidget>
         {minMax ? (
-          <TextWidget text={minMax} style={{ fontSize: 12, fontWeight: '600', color: palette.textSecondary }} />
+          <TextWidget text={minMax} style={{ fontSize: 11, fontWeight: '600', color: palette.textSecondary }} />
         ) : null}
       </FlexWidget>
 
@@ -86,25 +86,25 @@ export function SmallWidget({ content }: SmallWidgetProps) {
           alignItems: 'center',
           justifyContent: 'space-between',
           width: 'match_parent',
-          marginTop: 8,
-          marginBottom: 8,
+          marginTop: 6,
+          marginBottom: 6,
         }}
       >
         <FlexWidget style={{ flexDirection: 'column' }}>
           <TextWidget
             text={content.temperatureC !== null ? `${content.temperatureC}°` : '—'}
-            style={{ fontSize: 44, fontWeight: '800', color: palette.text }}
+            style={{ fontSize: 38, fontWeight: '800', color: palette.text }}
           />
           {content.conditionLabel ? (
             <TextWidget
               text={content.conditionLabel}
               maxLines={1}
-              style={{ fontSize: 13, color: palette.textSecondary, marginTop: -2 }}
+              style={{ fontSize: 12, color: palette.textSecondary, marginTop: -2 }}
             />
           ) : null}
         </FlexWidget>
         {content.weatherIconKey ? (
-          <SvgWidget svg={widgetIconSvg(content.weatherIconKey, palette.iconColor)} style={{ height: 44, width: 44 }} />
+          <SvgWidget svg={widgetIconSvg(content.weatherIconKey, palette.iconColor)} style={{ height: 40, width: 40 }} />
         ) : null}
       </FlexWidget>
 
@@ -112,14 +112,14 @@ export function SmallWidget({ content }: SmallWidgetProps) {
       {content.suggestionShort ? (
         <TextWidget
           text={content.suggestionShort}
-          maxLines={2}
-          style={{ fontSize: 13, fontWeight: '600', color: palette.text }}
+          maxLines={1}
+          style={{ fontSize: 12, fontWeight: '600', color: palette.text }}
         />
       ) : content.suggestionTitle ? (
         <TextWidget
           text={content.suggestionTitle}
-          maxLines={2}
-          style={{ fontSize: 13, fontWeight: '600', color: palette.text }}
+          maxLines={1}
+          style={{ fontSize: 12, fontWeight: '600', color: palette.text }}
         />
       ) : null}
       {content.staleLabel ? (

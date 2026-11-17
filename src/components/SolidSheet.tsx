@@ -15,13 +15,6 @@ import { glassMaterial } from '@/theme/glass';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { spacing } from '@/theme/spacing';
 
-const ANDROID_BLUR_METHOD =
-  Platform.OS === 'android'
-    ? Platform.Version >= 31
-      ? 'dimezisBlurViewSdk31Plus'
-      : 'dimezisBlurView'
-    : undefined;
-
 interface SolidSheetProps {
   children: ReactNode;
   topPadding?: number;
@@ -78,12 +71,13 @@ export function SolidSheet({ children, topPadding = spacing.lg }: SolidSheetProp
           },
         ]}
       >
-        <BlurView
-          intensity={50}
-          tint={theme.isDark ? 'dark' : 'light'}
-          blurMethod={ANDROID_BLUR_METHOD}
-          style={StyleSheet.absoluteFill}
-        />
+        {Platform.OS !== 'android' ? (
+          <BlurView
+            intensity={50}
+            tint={theme.isDark ? 'dark' : 'light'}
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
         <View style={styles.handleWrap} pointerEvents="none">
           <View style={[styles.handle, { backgroundColor: theme.isDark ? 'rgba(255,255,255,0.3)' : 'rgba(20,40,70,0.2)' }]} />
         </View>
