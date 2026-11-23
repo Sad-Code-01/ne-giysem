@@ -125,6 +125,10 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
     hourlyRaw.precipitation_probability,
     'hourly.precipitation_probability'
   );
+  const hourlyPrecipitationMm = asNumberArray(
+    hourlyRaw.precipitation,
+    'hourly.precipitation'
+  );
   const hourlyCodes = asNumberArray(hourlyRaw.weather_code, 'hourly.weather_code');
   const hourlyWind = asNumberArray(hourlyRaw.wind_speed_10m, 'hourly.wind_speed_10m');
   const hourlyUv = asNumberArray(hourlyRaw.uv_index, 'hourly.uv_index');
@@ -134,6 +138,7 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
   assertSameLength('hourly.temperature_2m', hourlyLength, hourlyTemperature.length);
   assertSameLength('hourly.apparent_temperature', hourlyLength, hourlyApparent.length);
   assertSameLength('hourly.precipitation_probability', hourlyLength, hourlyPrecipitation.length);
+  assertSameLength('hourly.precipitation', hourlyLength, hourlyPrecipitationMm.length);
   assertSameLength('hourly.weather_code', hourlyLength, hourlyCodes.length);
   assertSameLength('hourly.wind_speed_10m', hourlyLength, hourlyWind.length);
   assertSameLength('hourly.uv_index', hourlyLength, hourlyUv.length);
@@ -165,6 +170,7 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
     const temperature = hourlyTemperature[index];
     const apparentTemperature = hourlyApparent[index];
     const precipitationProbability = hourlyPrecipitation[index];
+    const precipitationMm = hourlyPrecipitationMm[index];
     const weatherCode = hourlyCodes[index];
     const windSpeed = hourlyWind[index];
     const uvIndex = hourlyUv[index];
@@ -172,6 +178,7 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
       temperature == null ||
       apparentTemperature == null ||
       precipitationProbability == null ||
+      precipitationMm == null ||
       weatherCode == null ||
       windSpeed == null ||
       uvIndex == null
@@ -184,6 +191,7 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
       temperature,
       apparentTemperature,
       precipitationProbability,
+      precipitationMm,
       weatherCode,
       windSpeed,
       uvIndex,

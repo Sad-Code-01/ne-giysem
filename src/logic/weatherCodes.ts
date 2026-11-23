@@ -83,6 +83,34 @@ export function isClearCode(code: number): boolean {
   return code === 0 || code === 1;
 }
 
+/**
+ * Gökyüzü/olay sınıfı — çoklu sinyalde öncelik sırasıyla:
+ * fırtına → kar → sağanak → yağmur → çisenti → sis → bulut → açık.
+ */
+export type SkyKind =
+  | 'storm'
+  | 'snow'
+  | 'showers'
+  | 'rain'
+  | 'drizzle'
+  | 'fog'
+  | 'cloud'
+  | 'clear'
+  | 'unknown';
+
+/** WMO kodunu olay sınıfına çevirir (Open-Meteo/WMO tablosuyla birebir). */
+export function classifySky(code: number): SkyKind {
+  if (isStormCode(code)) return 'storm';
+  if (isSnowCode(code)) return 'snow';
+  if (code >= 80 && code <= 82) return 'showers';
+  if (code >= 61 && code <= 67) return 'rain';
+  if (code >= 51 && code <= 57) return 'drizzle';
+  if (code === 45 || code === 48) return 'fog';
+  if (code === 2 || code === 3) return 'cloud';
+  if (code === 0 || code === 1) return 'clear';
+  return 'unknown';
+}
+
 /** Bant id'sinin kullanıcıya görünen etiketi (i18n). */
 export function bandLabel(band: TempBand): string {
   return t(`band.${band}`);

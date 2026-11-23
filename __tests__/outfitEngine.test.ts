@@ -142,6 +142,7 @@ describe('akşam dönüşü (6.6)', () => {
         temperature: evening ? 10 : 20,
         apparentTemperature: evening ? 10 : 20,
         precipitationProbability: 0,
+        precipitationMm: 0,
         weatherCode: 3,
         windSpeed: 5,
         uvIndex: 0,
@@ -211,5 +212,45 @@ describe('genel davranış', () => {
     expect(defaultDayOffset(late)).toBe(1);
     const early = uniformSnapshot({}, `${TODAY}T10:00`);
     expect(defaultDayOffset(early)).toBe(0);
+  });
+});
+
+describe('yapılandırılmış alerts (Faz 2)', () => {
+  it('her uyarı önem derecesi ve zaman penceresi taşır', () => {
+    const rainy = makeSnapshot({
+      currentTime: `${TODAY}T10:00`,
+      hourly: makeTwoDays(TODAY, TOMORROW, {
+        weatherCode: 61,
+        precipitationProbability: 70,
+        precipitationMm: 3,
+        apparentTemperature: 10,
+        temperature: 10,
+      }),
+      daily: makeDaily(TODAY),
+    });
+    const outfit = buildDayOutfit(rainy, TEST_PROFILE, 0);
+    expect(outfit.alerts.length).toBeGreaterThan(0);
+    for (const alert of outfit.alerts) {
+      expect(['info', 'caution', 'severe']).toContain(alert.severity);
+      expect(alert.warning.length).toBeGreaterThan(0);
+      expect(alert.id.length).toBeGreaterThan(0);
+    }
+    // Slot kaynaklı uyarılar saat aralığı taşır.
+    const slotAlerts = outfit.alerts.filter((a) => a.slot);
+    expect(slotAlerts.length).toBeGreaterThan(0);
+    for (const alert of slotAlerts) {
+      expect(alert.window).toMatch(/\d{2}–\d{2}/);
+    }
+    // Uyarılar ve alerts aynı metinleri içerir.
+    expect(outfit.warnings).toEqual(outfit.alerts.map((a) => a.warning));
+  });
+
+  it('kuru havada alerts boş olabilir', () => {
+    const dry = uniformSnapshot({ apparentTemperature: 20, temperature: 20 });
+    const outfit = buildDayOutfit(dry, TEST_PROFILE, 0);
+    // Band notları (ılık) info seviyesinde gelebilir; her alert'in window'u opsiyonel.
+    for (const alert of outfit.alerts) {
+      expect(alert.warning.length).toBeGreaterThan(0);
+    }
   });
 });

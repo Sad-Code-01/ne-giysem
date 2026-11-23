@@ -238,10 +238,13 @@ export default function TodayScreen() {
               })}
             </View>
             {chipWarnings.length > 0 ? (
-              <View style={styles.chipWrap}>
+              <View>
+                <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.appWarnings')}</Text>
+                <View style={styles.chipWrap}>
                 {chipWarnings.map((warning) => (
                   <GlassChip key={warning} label={warning} icon={warningIcon(warning)} tone="amber" />
                 ))}
+                </View>
               </View>
             ) : null}
             <Pressable

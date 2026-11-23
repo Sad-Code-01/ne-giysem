@@ -34,6 +34,7 @@ export const HOURLY_FIELDS = [
   'temperature_2m',
   'apparent_temperature',
   'precipitation_probability',
+  'precipitation',
   'weather_code',
   'wind_speed_10m',
   'uv_index',

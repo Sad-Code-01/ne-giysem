@@ -27,6 +27,7 @@ export interface HourlyOverrides {
   apparentTemperature?: number;
   temperature?: number;
   precipitationProbability?: number;
+  precipitationMm?: number;
   weatherCode?: number;
   windSpeed?: number;
   uvIndex?: number;
@@ -48,6 +49,7 @@ export function makeDayHours(
       temperature: overrides.temperature ?? 20,
       apparentTemperature: overrides.apparentTemperature ?? 20,
       precipitationProbability: overrides.precipitationProbability ?? 0,
+      precipitationMm: overrides.precipitationMm ?? 0,
       weatherCode: overrides.weatherCode ?? 3,
       windSpeed: overrides.windSpeed ?? 5,
       uvIndex: overrides.uvIndex ?? 0,

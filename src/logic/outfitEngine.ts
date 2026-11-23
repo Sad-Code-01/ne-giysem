@@ -9,9 +9,11 @@ import {
 } from '@/logic/weatherCodes';
 import { addDays, buildSlotWeathers, dayKeyOf } from '@/logic/slots';
 import type {
+  DayAlert,
   DayOutfit,
   Garment,
   OutfitProfile,
+  TimeSlotId,
   SlotOutfit,
   SlotWeather,
   TempBand,
@@ -137,17 +139,20 @@ export function buildSlotOutfit(slot: SlotWeather, humidity: number): SlotOutfit
   ];
 
   const precip = slot.precipitationProbabilityMax;
+  const precipMm = slot.precipitationMaxMm;
   const wetCode = slot.weatherCodes.some(isPrecipitationCode);
   const snowing = slot.weatherCodes.some(isSnowCode);
   const storming = slot.weatherCodes.some(isStormCode);
   const coldRain = slot.effectiveTemp < OUTFIT_THRESHOLDS.rainShoeBelow;
   let rainNote: string | undefined;
 
-  // Yağmur: sıcaksa yağmurluk + şemsiye, soğuksa mont ve bot.
-  if (wetCode || precip >= OUTFIT_THRESHOLDS.rainUmbrella) {
+  // Yağmur: olasılık, miktar (mm) ve WMO kodu ayrı sinyallerdir;
+  // herhangi biri eşiği aşarsa şemsiye önerilir, güçlüsü mont/bot.
+  const rainSignal = wetCode || precip >= OUTFIT_THRESHOLDS.rainUmbrella || precipMm >= 1;
+  const heavyRain = precip >= OUTFIT_THRESHOLDS.rainWaterproof || wetCode || precipMm >= 4;
+  if (rainSignal) {
     if (!hasId(items, 'semsiye')) items = upsert(items, requireGarment('semsiye'));
-    const heavy = precip >= OUTFIT_THRESHOLDS.rainWaterproof || wetCode;
-    if (heavy) {
+    if (heavyRain) {
       const shellId = coldRain ? 'su-gecirmez-mont' : 'yagmurluk';
       const outer = findByCategory(items, 'outer');
       if (!outer?.waterproof) {
@@ -157,9 +162,9 @@ export function buildSlotOutfit(slot: SlotWeather, humidity: number): SlotOutfit
       }
       items = replaceFirstOfCategory(items, 'shoes', requireGarment('su-gecirmez-bot'));
     }
-    if (wetCode && precip < OUTFIT_THRESHOLDS.rainUmbrella) {
+    if (wetCode && precip < OUTFIT_THRESHOLDS.rainUmbrella && precipMm < 1) {
       rainNote = t('outfit.rainNow', { when: slot.hourLabel });
-    } else if (precip >= OUTFIT_THRESHOLDS.rainWaterproof || wetCode) {
+    } else if (heavyRain) {
       rainNote = coldRain
         ? t('outfit.rainCold', { when: slot.hourLabel })
         : t('outfit.rainWarm', { when: slot.hourLabel });
@@ -314,23 +319,41 @@ export function buildDayOutfit(
 
   // Birleşik uyarılar: slot uyarıları (sırayla, tekil) + akşam + gün notu.
   const warnings: string[] = [];
+  const alerts: DayAlert[] = [];
   const seen = new Set<string>();
-  const push = (text: string): void => {
+  const slotWindow = (slotId: TimeSlotId): string | undefined =>
+    slotWeathers.find((item) => item.slot === slotId)?.hourLabel;
+  const push = (text: string, alert?: Omit<DayAlert, 'warning'>): void => {
     if (seen.has(text)) return;
     seen.add(text);
     warnings.push(text);
+    if (alert) alerts.push({ ...alert, warning: text });
   };
+  const bandNoteTexts = new Set([t('outfit.hotNote'), t('outfit.coldNote')]);
   for (const slot of activeSlots) {
-    for (const warning of slot.warnings) push(warning);
+    slot.warnings.forEach((warning, index) =>
+      push(warning, {
+        id: `${slot.slot}:${index}`,
+        severity: bandNoteTexts.has(warning) ? 'info' : 'caution',
+        slot: slot.slot,
+        window: slotWindow(slot.slot),
+      })
+    );
   }
-  for (const warning of eveningWarnings) push(warning);
+  eveningWarnings.forEach((warning, index) =>
+    push(warning, {
+      id: `evening:${index}`,
+      severity: 'info',
+      window: aksamW && !aksamW.past ? aksamW.hourLabel : undefined,
+    })
+  );
 
   // Gün içi sıcaklık farkı ≥10 → katmanlı giyin.
   const daySummary = snapshot.daily.find((day) => day.date === date);
   if (daySummary) {
     const swing = daySummary.temperatureMax - daySummary.temperatureMin;
     if (swing >= OUTFIT_THRESHOLDS.layersDailySwing) {
-      push(t('outfit.layers'));
+      push(t('outfit.layers'), { id: 'day:layers', severity: 'info' });
     }
   }
 
@@ -362,6 +385,7 @@ export function buildDayOutfit(
     slots,
     dayHero,
     warnings,
+    alerts,
     rainLine,
     eveningTurn,
     dailyNote,

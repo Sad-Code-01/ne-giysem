@@ -40,6 +40,8 @@ export interface HourlyPoint {
   temperature: number;
   apparentTemperature: number;
   precipitationProbability: number;
+  /** Saatlik yağış miktarı (mm). */
+  precipitationMm: number;
   weatherCode: number;
   windSpeed: number;
   uvIndex: number;
@@ -135,6 +137,8 @@ export interface SlotWeather {
   maxWind: number;
   maxUv: number;
   precipitationProbabilityMax: number;
+  /** Dilimdeki maksimum saatlik yağış miktarı (mm). */
+  precipitationMaxMm: number;
   /** Dilimdeki WMO kodları (sırayla). */
   weatherCodes: number[];
   /** Dilimde baskın yağış kodu (illüstrasyon için). */
@@ -177,6 +181,26 @@ export interface SlotOutfit {
   past: boolean;
 }
 
+/** Uyarı önem derecesi: bilgi < ihtiyat < şiddetli. */
+export type AlertSeverity = 'info' | 'caution' | 'severe';
+
+/**
+ * Yapılandırılmış uyarı: metin + hangi dilim/saat aralığı için + önem.
+ * `warnings` metinleri geriye uyumluluk için durur; `alerts` makine
+ * tarafından okunabilir kopyadır (neden ve zaman penceresi taşır).
+ */
+export interface DayAlert {
+  /** Kararlı kimlik: '<slot|day>:<warningIndex>'. */
+  id: string;
+  severity: AlertSeverity;
+  /** Uyarının ait olduğu dilim; gün geneli notlarda undefined. */
+  slot?: TimeSlotId;
+  /** "08–12" gibi saat aralığı; gün geneli notlarda undefined. */
+  window?: string;
+  /** Kullanıcıya gösterilen metin (i18n çıktısı). */
+  warning: string;
+}
+
 /** Gün (Bugün/Yarın) için tam öneri. */
 export interface DayOutfit {
   /** "YYYY-MM-DD" */
@@ -193,6 +217,8 @@ export interface DayOutfit {
   dayHero: Garment;
   /** Birleşik uyarılar (akşam dönüşü dahil). */
   warnings: string[];
+  /** Aynı uyarıların yapılandırılmış hâli (önem + zaman penceresi). */
+  alerts: DayAlert[];
   /** Günün tek yağmur cümlesi. Kuru günde yok. */
   rainLine?: string;
   /** Akşam bandı belirgin şekilde daha soğuk/yağışlı mı (6.6). */

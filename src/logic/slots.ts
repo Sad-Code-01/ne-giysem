@@ -98,6 +98,7 @@ export function buildSlotWeathers(
     const winds = hours.map((point) => point.windSpeed);
     const uvs = hours.map((point) => point.uvIndex);
     const precips = hours.map((point) => point.precipitationProbability);
+    const precipMm = hours.map((point) => point.precipitationMm);
     const codes = hours.map((point) => point.weatherCode);
 
     const avgApparent = average(apparent);
@@ -105,6 +106,7 @@ export function buildSlotWeathers(
     const maxWind = maxOf(winds);
     const maxUv = maxOf(uvs);
     const precipitationProbabilityMax = maxOf(precips);
+    const precipitationMaxMm = maxOf(precipMm);
 
     // Baskın kod: yağış ihtimali en yüksek saatin kodu; eşitlikte ilk.
     let dominantCode = codes[0] ?? 3;
@@ -143,6 +145,7 @@ export function buildSlotWeathers(
       maxWind,
       maxUv,
       precipitationProbabilityMax,
+      precipitationMaxMm,
       weatherCodes: codes,
       dominantCode,
       isDay,

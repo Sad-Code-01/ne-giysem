@@ -287,5 +287,6 @@
   "settings.notifLocked": "Reminder active",
   "widget.partInner": "Inner",
   "widget.partMid": "Mid",
-  "settings.widgetSample": "Sample"
+  "settings.widgetSample": "Sample",
+  "outfit.appWarnings": "In-app forecast notices"
 }
