@@ -38,7 +38,7 @@ import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { locale, t } from '@/i18n';
 import { onScrollToTopRequest } from '@/lib/scrollToTop';
 import { garmentLabel } from '@/logic/garmentCatalog';
-import { adviceLines, buildDayOutfit, defaultDayOffset } from '@/logic/outfitEngine';
+import { adviceLines, buildDayOutfit, defaultDayOffset, upcomingSlots } from '@/logic/outfitEngine';
 import { uniqueLines } from '@/logic/outfitGrouping';
 import { buildSlotWeathers } from '@/logic/slots';
 import { getWeatherCondition, getWeatherVisual } from '@/logic/weatherCodes';
@@ -206,7 +206,7 @@ export default function TodayScreen() {
               </Text>
             ) : null}
             <View style={[styles.slotStrip, { borderTopColor: 'rgba(120,140,165,0.28)' }]}>
-              {dayOutfit.slots.map((slot, index) => {
+              {upcomingSlots(dayOutfit).map((slot, index) => {
                 const weather = slotWeathers.find((item) => item.slot === slot.slot);
                 const muted = weather?.past ?? false;
                 const ink = muted ? theme.textSecondary : theme.text;

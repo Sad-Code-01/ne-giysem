@@ -21,7 +21,7 @@ import { useTabFade } from '@/hooks/useTabFade';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { garmentLabel } from '@/logic/garmentCatalog';
 import { garmentIcon } from '@/logic/itemIcons';
-import { adviceLines, buildDayOutfit, defaultDayOffset } from '@/logic/outfitEngine';
+import { adviceLines, buildDayOutfit, defaultDayOffset, upcomingSlots } from '@/logic/outfitEngine';
 import { groupOutfitItems, joinGarmentNames, uniqueLines } from '@/logic/outfitGrouping';
 import { buildSlotWeathers } from '@/logic/slots';
 import { getWeatherVisual } from '@/logic/weatherCodes';
@@ -220,7 +220,7 @@ export default function OutfitScreen() {
                 </View>
               </View>
               <View style={styles.planList}>
-                {selected.slots.map((outfit) => {
+                {upcomingSlots(selected).map((outfit) => {
                   const weather = selectedSlotWeathers.find((item) => item.slot === outfit.slot);
                   return (
                     <View key={outfit.slot} style={styles.planRow}>
@@ -269,7 +269,8 @@ function DailyView({
   onDayChange: (next: 0 | 1) => void;
 }) {
   const theme = useAppTheme();
-  const mainSlot = outfit.slots.find((slot) => slot.slot === 'ogle') ?? outfit.slots[1] ?? outfit.slots[0];
+  const visibleSlots = upcomingSlots(outfit);
+  const mainSlot = visibleSlots.find((slot) => slot.slot === 'ogle') ?? visibleSlots[1] ?? visibleSlots[0];
   const groups = groupOutfitItems(mainSlot?.items ?? []);
   const description = uniqueLines([
     ...adviceLines(outfit),
@@ -334,7 +335,7 @@ function DailyView({
       <Animated.View entering={FadeInDown.delay(120).duration(280)}>
         <Glass padded={false} contentStyle={styles.slotsCard}>
           <View style={styles.slots}>
-            {outfit.slots.map((slot, index) => {
+            {upcomingSlots(outfit).map((slot, index) => {
               const weather = slotWeathers.find((item) => item.slot === slot.slot);
               const muted = weather?.past ?? false;
               const ink = muted ? theme.textSecondary : theme.text;

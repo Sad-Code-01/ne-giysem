@@ -1,5 +1,5 @@
 import { garmentLabel } from '@/logic/garmentCatalog';
-import { buildDayOutfit, defaultDayOffset } from '@/logic/outfitEngine';
+import { buildDayOutfit, defaultDayOffset, upcomingSlots } from '@/logic/outfitEngine';
 import { getWeatherCondition, getWeatherVisual } from '@/logic/weatherCodes';
 import { t } from '@/i18n';
 import type { DayOutfit, Garment, IllustrationKind, OutfitProfile, WeatherSnapshot } from '@/types';
@@ -98,7 +98,8 @@ function suggestionFromDay(day: DayOutfit): {
   short: string;
   parts: WidgetSuggestionPart[];
 } {
-  const ogle = day.slots.find((slot) => slot.slot === 'ogle') ?? day.slots[1] ?? day.slots[0];
+  const visible = upcomingSlots(day);
+  const ogle = visible.find((slot) => slot.slot === 'ogle') ?? visible[1] ?? visible[0];
   const items = ogle?.items ?? [];
 
   // Katman sırası: içten dışa (sweat → kazak → mont). `warmth` düşük olan önce.

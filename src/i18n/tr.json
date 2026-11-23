@@ -286,5 +286,6 @@
   "settings.notifOffConfirm": "Kapat",
   "settings.notifLocked": "Hatırlatma aktif",
   "widget.partInner": "İç",
-  "widget.partMid": "Orta"
+  "widget.partMid": "Orta",
+  "settings.widgetSample": "Örnek"
 }

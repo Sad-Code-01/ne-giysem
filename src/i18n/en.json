@@ -286,5 +286,6 @@
   "settings.notifOffConfirm": "Turn off",
   "settings.notifLocked": "Reminder active",
   "widget.partInner": "Inner",
-  "widget.partMid": "Mid"
+  "widget.partMid": "Mid",
+  "settings.widgetSample": "Sample"
 }

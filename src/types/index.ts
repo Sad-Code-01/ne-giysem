@@ -173,6 +173,8 @@ export interface SlotOutfit {
   /** 'avoid' → "Bugün çıkma." koşulu. */
   level: 'normal' | 'avoid';
   effectiveTemp: number;
+  /** Dilim saati geçti mi (yalnızca bugün için anlamlı). */
+  past: boolean;
 }
 
 /** Gün (Bugün/Yarın) için tam öneri. */

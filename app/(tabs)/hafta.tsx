@@ -16,7 +16,7 @@ import { useTabFade } from '@/hooks/useTabFade';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { garmentLabel } from '@/logic/garmentCatalog';
 import { onScrollToTopRequest } from '@/lib/scrollToTop';
-import { buildDayOutfit } from '@/logic/outfitEngine';
+import { buildDayOutfit, upcomingSlots } from '@/logic/outfitEngine';
 import { buildSlotWeathers } from '@/logic/slots';
 import { getWeatherVisual } from '@/logic/weatherCodes';
 import { locale, t } from '@/i18n';
@@ -171,7 +171,7 @@ export default function WeekScreen() {
                 </View>
               </View>
               <View style={styles.planList}>
-                {selected.slots.map((outfit) => {
+                {upcomingSlots(selected).map((outfit) => {
                   const weather = selectedSlotWeathers.find((item) => item.slot === outfit.slot);
                   return (
                     <View key={outfit.slot} style={styles.planRow}>

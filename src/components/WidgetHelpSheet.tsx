@@ -53,6 +53,8 @@ export function WidgetPreview({ kind, height, selected }: { kind: WidgetKind; he
   if (kind === 'mini') {
     return (
       <View style={[box, styles.miniRow]}>
+      <Text style={[styles.sampleTag, { color: sub }]}>{t('settings.widgetSample')}</Text>
+
         <CloudSun size={16} color={accent} weight="regular" />
         <Text style={[styles.previewTemp, { color: fg }]}>13°</Text>
         <View style={{ flex: 1 }}>
@@ -65,6 +67,7 @@ export function WidgetPreview({ kind, height, selected }: { kind: WidgetKind; he
   if (kind === 'small') {
     return (
       <View style={box}>
+      <Text style={[styles.sampleTag, { color: sub }]}>{t('settings.widgetSample')}</Text>
         <View style={styles.previewMidRow}>
           <Text style={[styles.previewTemp, { color: fg }]}>13°</Text>
           <CloudSun size={20} color={accent} weight="regular" />
@@ -76,6 +79,7 @@ export function WidgetPreview({ kind, height, selected }: { kind: WidgetKind; he
 
   return (
     <View style={box}>
+      <Text style={[styles.sampleTag, { color: sub }]}>{t('settings.widgetSample')}</Text>
       <View style={styles.previewMidRow}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.previewTemp, { color: fg }]}>13°</Text>
@@ -209,6 +213,14 @@ const styles = StyleSheet.create({
   previewSub: {
     fontSize: 9,
     marginTop: 1,
+  },
+  sampleTag: {
+    position: 'absolute',
+    top: 4,
+    right: 6,
+    fontSize: 8,
+    fontWeight: '600',
+    letterSpacing: 0.4,
   },
   previewLabelRow: {
     flexDirection: 'row',

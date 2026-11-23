@@ -229,6 +229,7 @@ export function buildSlotOutfit(slot: SlotWeather, humidity: number): SlotOutfit
     rainNote,
     level: avoid ? 'avoid' : 'normal',
     effectiveTemp: slot.effectiveTemp,
+    past: slot.past,
   };
 }
 
@@ -263,12 +264,19 @@ export function buildDayOutfit(
     buildSlotOutfit(slotWeather, snapshot.current.humidity)
   );
 
-  // Gün kahramanı: üç slot kahramanından en yüksek puanlı.
-  const dayHero = slots.reduce((best, slot) =>
+  // Geçmiş dilimler "bugünün geleceği" gibi sunulmasın: başlık, kahraman,
+  // uyarılar ve akşam analizi yalnızca henüz bitmemiş dilimlerden üretilir.
+  // Tüm dilimler geçmişse (gün sonu) mevcut davranış korunur.
+  const activeSlots = slots.some((slot) => !slot.past)
+    ? slots.filter((slot) => !slot.past)
+    : slots;
+
+  // Gün kahramanı: aktif dilim kahramanlarından en yüksek puanlı.
+  const dayHero = activeSlots.reduce((best, slot) =>
     slot.hero.warmth > best.hero.warmth ? slot : best
   ).hero;
 
-  const anyAvoid = slots.some((slot) => slot.level === 'avoid');
+  const anyAvoid = activeSlots.some((slot) => slot.level === 'avoid');
   const title = anyAvoid
     ? t('outfit.todayExit')
     : t('outfit.titleWeather', { item: garmentLabel(dayHero) });
@@ -284,7 +292,8 @@ export function buildDayOutfit(
 
   let eveningTurn = false;
   const eveningWarnings: string[] = [];
-  if (sabahW && ogleW && aksamW && sabahOut && ogleOut && aksamOut) {
+  // Akşam dilimi geçmişse "akşam daha soğuk/yağmurlu" uyarısı anlamsızlaşır.
+  if (sabahW && ogleW && aksamW && sabahOut && ogleOut && aksamOut && !aksamW.past) {
     const morningColdest = Math.min(bandIndex(sabahOut.band), bandIndex(ogleOut.band));
     const colder =
       bandIndex(aksamOut.band) - morningColdest >= OUTFIT_THRESHOLDS.eveningTurnBandDiff;
@@ -311,7 +320,7 @@ export function buildDayOutfit(
     seen.add(text);
     warnings.push(text);
   };
-  for (const slot of slots) {
+  for (const slot of activeSlots) {
     for (const warning of slot.warnings) push(warning);
   }
   for (const warning of eveningWarnings) push(warning);
@@ -336,9 +345,9 @@ export function buildDayOutfit(
 
   let rainLine: string | undefined;
   let bestPrecip = -1;
-  slots.forEach((slotOutfit, index) => {
+  activeSlots.forEach((slotOutfit) => {
     const note = slotOutfit.rainNote;
-    const precip = slotWeathers[index]?.precipitationProbabilityMax ?? 0;
+    const precip = slotWeathers.find((item) => item.slot === slotOutfit.slot)?.precipitationProbabilityMax ?? 0;
     if (note && precip >= bestPrecip) {
       bestPrecip = precip;
       rainLine = note;
@@ -357,6 +366,12 @@ export function buildDayOutfit(
     eveningTurn,
     dailyNote,
   };
+}
+
+/** UI'da gösterilecek dilimler: geçmiş olanlar hariç; hepsi geçmişse tümü. */
+export function upcomingSlots(day: DayOutfit): SlotOutfit[] {
+  const active = day.slots.filter((slot) => !slot.past);
+  return active.length ? active : day.slots;
 }
 
 /** Bugün ekranında en fazla iki satır: akşam, yağmur ya da “yağmur yok”. */

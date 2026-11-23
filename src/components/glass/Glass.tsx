@@ -72,14 +72,6 @@ export function Glass({
           style={StyleSheet.absoluteFill}
         />
       ) : null}
-      {/* Üst kenarda ince parlak iç çizgi */}
-      <View
-        style={[
-          styles.topHighlight,
-          { backgroundColor: material.highlight },
-        ]}
-        pointerEvents="none"
-      />
       <View style={[padded && { padding }, contentStyle]}>{children}</View>
     </View>
   );
@@ -89,13 +81,5 @@ const styles = StyleSheet.create({
   clip: {
     borderWidth: 1,
     overflow: 'hidden',
-  },
-  topHighlight: {
-    position: 'absolute',
-    top: 0,
-    left: '10%',
-    right: '10%',
-    height: 1,
-    borderRadius: 1,
   },
 });
