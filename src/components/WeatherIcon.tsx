@@ -1,51 +1,21 @@
-import {
-  Cloud,
-  CloudFog,
-  CloudLightning,
-  CloudMoon,
-  CloudRain,
-  CloudSnow,
-  CloudSun,
-  MoonStars,
-  Sun,
-  Wind,
-  type Icon,
-} from 'phosphor-react-native';
+import { SvgXml } from 'react-native-svg';
 
+import { WEATHER_ICON_XML } from '@/components/weatherIcons.generated';
 import type { IllustrationKind } from '@/types';
-
-const DAY_ICONS: Record<IllustrationKind, Icon> = {
-  sunny: Sun,
-  partly: CloudSun,
-  cloudy: Cloud,
-  rain: CloudRain,
-  snow: CloudSnow,
-  wind: Wind,
-  fog: CloudFog,
-  storm: CloudLightning,
-};
-
-const NIGHT_ICONS: Record<IllustrationKind, Icon> = {
-  sunny: MoonStars,
-  partly: CloudMoon,
-  cloudy: Cloud,
-  rain: CloudRain,
-  snow: CloudSnow,
-  wind: Wind,
-  fog: CloudFog,
-  storm: CloudLightning,
-};
 
 interface WeatherIconProps {
   kind: IllustrationKind;
   isDay: boolean;
   size?: number;
+  /** Eski Phosphor API uyumluluğu — Meteocons kendi renklerini kullanır. */
   color?: string;
   weight?: 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone';
 }
 
-/** WMO illüstrasyon türünü Phosphor hava ikonuna çevirir. */
-export function WeatherIcon({ kind, isDay, size = 24, color, weight = 'regular' }: WeatherIconProps) {
-  const IconComponent = isDay ? DAY_ICONS[kind] : NIGHT_ICONS[kind];
-  return <IconComponent size={size} color={color} weight={weight} />;
+/** Hava durumu ikonu — Meteocons flat seti (react-native-svg SvgXml). */
+export function WeatherIcon({ kind, isDay, size = 24 }: WeatherIconProps) {
+  const key = `${kind}:${isDay ? 'day' : 'night'}`;
+  const xml = WEATHER_ICON_XML[key] ?? WEATHER_ICON_XML[`${kind}:day`];
+  if (!xml) return null;
+  return <SvgXml xml={xml} width={size} height={size} />;
 }
