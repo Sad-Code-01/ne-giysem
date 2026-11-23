@@ -110,15 +110,15 @@ describe('kişiselleştirme', () => {
 });
 
 describe('kaçınılmaz durum (6.4)', () => {
-  it('fırtına kodu → "Bugün çıkma."', () => {
+  it('fırtına kodu → hava çok sert', () => {
     const storm = uniformSnapshot({ weatherCode: 95, apparentTemperature: 20, temperature: 20 });
     const outfit = buildDayOutfit(storm, TEST_PROFILE);
     expect(outfit.avoid).toBe(true);
-    expect(outfit.title).toBe('Bugün çıkma.');
+    expect(outfit.title).toBe('Bugün hava epey sert görünüyor.');
     expect(outfit.avoidNote).toContain('evde kal');
   });
 
-  it('aşırı rüzgâr (≥60) → "Bugün çıkma."', () => {
+  it('aşırı rüzgâr (≥60) → hava çok sert', () => {
     const windy = uniformSnapshot({ windSpeed: 65, apparentTemperature: 20, temperature: 20 });
     const outfit = buildDayOutfit(windy, TEST_PROFILE);
     expect(outfit.avoid).toBe(true);
@@ -158,7 +158,7 @@ describe('akşam dönüşü (6.6)', () => {
     });
     const outfit = buildDayOutfit(snapshot, TEST_PROFILE, 0);
     expect(outfit.eveningTurn).toBe(true);
-    expect(outfit.warnings).toContain('Akşam hava dönüyor, yanına kat al.');
+    expect(outfit.warnings).toContain('Akşam hava bozulabilir — yanına hafif bir kat al.');
   });
 });
 
@@ -169,7 +169,7 @@ describe('günlük not (5.1-E)', () => {
       hourly: makeTwoDays(TODAY, TOMORROW),
     });
     const outfit = buildDayOutfit(snapshot, TEST_PROFILE);
-    expect(outfit.dailyNote).toBe('Öğleden sonra hava ısınabilir. Sabah çıkıyorsan yanına ceket al.');
+    expect(outfit.dailyNote).toBe('Öğleden sonra hava ısınabilir — sabah çıkıyorsan yanına hafif bir kat al.');
   });
 
   it('gün içi fark <8°C → not yok', () => {
