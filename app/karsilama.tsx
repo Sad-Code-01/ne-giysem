@@ -2,7 +2,7 @@ import { Check } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Switch, Text, View, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -124,9 +124,7 @@ export default function WelcomeScreen() {
     setAwaitingPlace(true);
     setPlaceRequestedAt(Date.now());
     try {
-      // Konum akışıyla birlikte günlük hatırlatma iznini de iste —
-      // GPS beklerken diyalog sırada beklemesin diye paralel başlat.
-      void requestNotificationPermission();
+      // Yalnızca konum izni istenir; bildirim izni kendi adımında sorulur.
       await loadMyLocation();
     } finally {
       setLocationBusy(false);
@@ -138,6 +136,14 @@ export default function WelcomeScreen() {
       setNotifOn(false);
       return;
     }
+    // Sistem diyaloğundan önce kısa açıklama göster (diğer ekranlarla aynı akış).
+    const approved = await new Promise<boolean>((resolve) => {
+      Alert.alert(t('settings.notifPermTitle'), t('settings.notifPermBody'), [
+        { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+        { text: t('common.allow'), onPress: () => resolve(true) },
+      ]);
+    });
+    if (!approved) return;
     const granted = await requestNotificationPermission();
     setNotifOn(granted);
   };

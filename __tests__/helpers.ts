@@ -139,6 +139,7 @@ export function makeSnapshot(options: {
     isDay: true,
     precipitationProbability: 0,
     uvIndex: 0,
+    visibility: 10000,
     ...options.current,
   };
 

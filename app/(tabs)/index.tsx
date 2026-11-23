@@ -2,6 +2,7 @@ import {
   CaretRight,
   CloudRain,
   Drop,
+  Eye,
   MapPin,
   NavigationArrow,
   Wind,
@@ -312,6 +313,17 @@ export default function TodayScreen() {
                 <Text style={[typography.caption, { color: theme.text }]}>{`%${rain}`}</Text>
                 <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.rainLabel')}</Text>
               </View>
+              {current.visibility < 5000 ? (
+                <View style={styles.heroStat}>
+                  <Eye size={16} color={theme.textSecondary} weight="regular" />
+                  <Text style={[typography.caption, { color: theme.text }]}>
+                    {current.visibility >= 1000
+                      ? `${(current.visibility / 1000).toFixed(1)} km`
+                      : `${Math.round(current.visibility)} m`}
+                  </Text>
+                  <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.visibilityLabel')}</Text>
+                </View>
+              ) : null}
             </View>
           </Glass>
         </Animated.View>

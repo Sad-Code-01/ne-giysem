@@ -200,9 +200,19 @@ export function buildSlotOutfit(slot: SlotWeather, humidity: number): SlotOutfit
     warnings.push(t('outfit.sun'));
   }
 
-  // Nemli-sıcak.
-  if (humidity >= OUTFIT_THRESHOLDS.humidWarmHumidity && slot.avgTemp >= OUTFIT_THRESHOLDS.humidWarmTemperature) {
+  // Nemli-sıcak: bağıl nem veya çiy noktası (API) eşiği.
+  const muggy =
+    slot.dewPointMax >= OUTFIT_THRESHOLDS.muggyDewPoint && slot.avgTemp >= OUTFIT_THRESHOLDS.muggyTemperature;
+  if (
+    (humidity >= OUTFIT_THRESHOLDS.humidWarmHumidity && slot.avgTemp >= OUTFIT_THRESHOLDS.humidWarmTemperature) ||
+    muggy
+  ) {
     warnings.push(t('outfit.humid'));
+  }
+
+  // Sis: görüş 1 km altına düşerse güvenlik uyarısı.
+  if (slot.visibilityMin < OUTFIT_THRESHOLDS.fogVisibilityM) {
+    warnings.push(t('outfit.fog'));
   }
 
   // Bant notları.

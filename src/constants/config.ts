@@ -27,6 +27,7 @@ export const CURRENT_FIELDS = [
   'weather_code',
   'wind_speed_10m',
   'is_day',
+  'visibility',
 ] as const;
 
 /** Open-Meteo `hourly` alanları. */
@@ -39,6 +40,9 @@ export const HOURLY_FIELDS = [
   'wind_speed_10m',
   'uv_index',
   'is_day',
+  'visibility',
+  'cloud_cover',
+  'dew_point_2m',
 ] as const;
 
 /** Open-Meteo `daily` alanları (geçmiş 14 gün + 16 günlük tahmin). */
@@ -118,6 +122,11 @@ export const OUTFIT_THRESHOLDS = {
   uvProtection: 6,
   humidWarmHumidity: 75,
   humidWarmTemperature: 26,
+  /** Çiy noktası bu değerin üstünde + sıcaklık eşiği → bunaltıcı nem. */
+  muggyDewPoint: 21,
+  muggyTemperature: 24,
+  /** Görüş bu değerin (metre) altındaysa sis uyarısı. */
+  fogVisibilityM: 1000,
   layersDailySwing: 10,
   /** Günlük not eşiği (°C). */
   noteDailySwing: 8,

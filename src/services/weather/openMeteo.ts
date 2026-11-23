@@ -133,6 +133,9 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
   const hourlyWind = asNumberArray(hourlyRaw.wind_speed_10m, 'hourly.wind_speed_10m');
   const hourlyUv = asNumberArray(hourlyRaw.uv_index, 'hourly.uv_index');
   const hourlyIsDay = asNumberArray(hourlyRaw.is_day, 'hourly.is_day');
+  const hourlyVisibility = asNumberArray(hourlyRaw.visibility, 'hourly.visibility');
+  const hourlyCloudCover = asNumberArray(hourlyRaw.cloud_cover, 'hourly.cloud_cover');
+  const hourlyDewPoint = asNumberArray(hourlyRaw.dew_point_2m, 'hourly.dew_point_2m');
 
   const hourlyLength = hourlyTimes.length;
   assertSameLength('hourly.temperature_2m', hourlyLength, hourlyTemperature.length);
@@ -143,6 +146,9 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
   assertSameLength('hourly.wind_speed_10m', hourlyLength, hourlyWind.length);
   assertSameLength('hourly.uv_index', hourlyLength, hourlyUv.length);
   assertSameLength('hourly.is_day', hourlyLength, hourlyIsDay.length);
+  assertSameLength('hourly.visibility', hourlyLength, hourlyVisibility.length);
+  assertSameLength('hourly.cloud_cover', hourlyLength, hourlyCloudCover.length);
+  assertSameLength('hourly.dew_point_2m', hourlyLength, hourlyDewPoint.length);
 
   const hourIndex = findHourIndex(hourlyTimes, currentTime);
 
@@ -157,6 +163,7 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
     isDay: asNumber(currentRaw.is_day, 'current.is_day') === 1,
     precipitationProbability: hourlyPrecipitation[hourIndex] ?? 0,
     uvIndex: hourlyUv[hourIndex] ?? 0,
+    visibility: asNumber(currentRaw.visibility, 'current.visibility'),
   };
 
   // Saatlik seri: yalnızca bugünden sonrası (geçmiş saatler elenir, dünkü veriler gerekmez).
@@ -196,6 +203,9 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
       windSpeed,
       uvIndex,
       isDay: hourlyIsDay[index] === 1,
+      visibility: hourlyVisibility[index] ?? undefined,
+      cloudCover: hourlyCloudCover[index] ?? undefined,
+      dewPoint: hourlyDewPoint[index] ?? undefined,
     });
   }
 

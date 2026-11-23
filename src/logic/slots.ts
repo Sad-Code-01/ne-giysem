@@ -100,6 +100,15 @@ export function buildSlotWeathers(
     const precips = hours.map((point) => point.precipitationProbability);
     const precipMm = hours.map((point) => point.precipitationMm);
     const codes = hours.map((point) => point.weatherCode);
+    const visibilities = hours
+      .map((point) => point.visibility)
+      .filter((value): value is number => typeof value === 'number');
+    const cloudCovers = hours
+      .map((point) => point.cloudCover)
+      .filter((value): value is number => typeof value === 'number');
+    const dewPoints = hours
+      .map((point) => point.dewPoint)
+      .filter((value): value is number => typeof value === 'number');
 
     const avgApparent = average(apparent);
     const avgTemp = average(temps);
@@ -147,6 +156,9 @@ export function buildSlotWeathers(
       precipitationProbabilityMax,
       precipitationMaxMm,
       weatherCodes: codes,
+      visibilityMin: visibilities.length ? Math.min(...visibilities) : Number.POSITIVE_INFINITY,
+      cloudCoverMax: cloudCovers.length ? Math.max(...cloudCovers) : 0,
+      dewPointMax: dewPoints.length ? Math.max(...dewPoints) : Number.NEGATIVE_INFINITY,
       dominantCode,
       isDay,
       past,

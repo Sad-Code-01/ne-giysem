@@ -10,7 +10,7 @@ import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useDailyReminder } from '@/hooks/useDailyReminder';
@@ -96,7 +96,9 @@ export default function RootLayout() {
   if (!ready) {
     return (
       <View style={[styles.loading, { backgroundColor: theme.bg }]}>
-        <ActivityIndicator color={theme.primary} />
+        <Image source={require('../assets/favicon.png')} style={styles.logo} resizeMode="contain" />
+        <Text style={[styles.brand, { color: theme.text }]}>Ne Giysem?</Text>
+        <ActivityIndicator color={theme.primary} style={styles.spinner} />
       </View>
     );
   }
@@ -143,5 +145,18 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  logo: {
+    width: 96,
+    height: 96,
+    marginBottom: 12,
+  },
+  brand: {
+    fontFamily: 'BricolageGrotesque_800ExtraBold',
+    fontSize: 30,
+    letterSpacing: -0.5,
+  },
+  spinner: {
+    marginTop: 28,
   },
 });

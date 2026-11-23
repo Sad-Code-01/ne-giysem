@@ -138,6 +138,8 @@
   "outfit.wind": "Rüzgâr sert, rüzgârlık iyi gider.",
   "outfit.sun": "Güneş kremi sürmeyi unutma.",
   "outfit.humid": "İnce, nefes alan kumaşlar seç.",
+  "outfit.fog": "Sis var — görüş düşük, yola dikkat.",
+  "outfit.visibilityLabel": "Görüş",
   "outfit.layers": "Katmanlı giyin.",
   "outfit.hotNote": "İnce ve açık renkli giy.",
   "outfit.coldNote": "Kalın giyin, atkıyı da unutma.",

@@ -31,6 +31,8 @@ export interface CurrentWeather {
   precipitationProbability: number;
   /** İçinde bulunulan saat için UV indeksi. */
   uvIndex: number;
+  /** Görüş mesafesi (metre). */
+  visibility: number;
 }
 
 /** Saatlik tahmin noktası. */
@@ -46,6 +48,12 @@ export interface HourlyPoint {
   windSpeed: number;
   uvIndex: number;
   isDay: boolean;
+  /** Görüş mesafesi (metre); API vermezse undefined. */
+  visibility?: number;
+  /** Bulutluluk (%0-100); API vermezse undefined. */
+  cloudCover?: number;
+  /** Çiy noktası sıcaklığı (°C); API vermezse undefined. */
+  dewPoint?: number;
 }
 
 /** Günlük özet (geçmiş günler de dahil; `isPast` ile ayrılır). */
@@ -141,6 +149,12 @@ export interface SlotWeather {
   precipitationMaxMm: number;
   /** Dilimdeki WMO kodları (sırayla). */
   weatherCodes: number[];
+  /** Dilimdeki en düşük görüş mesafesi (metre); veri yoksa Infinity. */
+  visibilityMin: number;
+  /** Dilimdeki maksimum bulutluluk (%). */
+  cloudCoverMax: number;
+  /** Dilimdeki maksimum çiy noktası (°C). */
+  dewPointMax: number;
   /** Dilimde baskın yağış kodu (illüstrasyon için). */
   dominantCode: number;
   /** Dilimde gün ışığı var mı. */
