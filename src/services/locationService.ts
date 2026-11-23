@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { Linking } from 'react-native';
+import { Linking, Platform } from 'react-native';
 
 import { ServiceError } from '@/services/http';
 import type { Place } from '@/types';
@@ -41,6 +41,20 @@ export async function isLocationPermissionBlocked(): Promise<boolean> {
 /** İzin/servis durumunu uygulama ayarları sayfasına yönlendirir. */
 export function openAppSettings(): void {
   void Linking.openSettings();
+}
+
+/**
+ * Konum servisleri kapalıysa Android'de sistem konum ayarlarına gider;
+ * açılamazsa uygulama ayarlarına düşer. iOS'ta uygulama ayarları kullanılır.
+ */
+export function openLocationSettings(): void {
+  if (Platform.OS === 'android') {
+    void Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() => {
+      openAppSettings();
+    });
+    return;
+  }
+  openAppSettings();
 }
 
 /** Konum servisleri açık mı? (Hata durumunda engellememek için `true` varsayılır.) */

@@ -18,7 +18,7 @@ import { Glass, GlassButton, ScreenBackground } from '@/components/glass';
 import { SettingsHeader } from '@/components/SettingsHeader';
 import { useProfile } from '@/hooks/useProfile';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
-import { sendChatMessage, type ChatMessage } from '@/services/aiService';
+import { sendChatMessage, testAiKey, type ChatMessage } from '@/services/aiService';
 import { clearAiApiKey, getAiApiKey, setAiApiKey } from '@/storage/aiKey';
 import { t } from '@/i18n';
 import { useAppTheme } from '@/theme/useAppTheme';
@@ -51,6 +51,7 @@ export default function AssistantScreen() {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [testing, setTesting] = useState(false);
   const listRef = useRef<FlatList<UiMessage>>(null);
 
   useEffect(() => {
@@ -65,11 +66,25 @@ export default function AssistantScreen() {
 
   const saveKey = async (): Promise<void> => {
     const trimmed = keyInput.trim();
-    if (!trimmed) return;
-    await setAiApiKey(trimmed);
-    setKeyInput('');
-    setHasKey(true);
-    setShowKeyEditor(false);
+    if (!trimmed || testing) return;
+    setTesting(true);
+    try {
+      await setAiApiKey(trimmed);
+      const problem = await testAiKey(trimmed);
+      if (problem === 'missing') return;
+      if (problem) {
+        Alert.alert(t('ai.testFailTitle'), problem, [
+          { text: t('common.ok'), onPress: () => setKeyInput('') },
+        ]);
+        return;
+      }
+      setKeyInput('');
+      setHasKey(true);
+      setShowKeyEditor(false);
+      Alert.alert(t('ai.testOkTitle'), t('ai.testOkBody'));
+    } finally {
+      setTesting(false);
+    }
   };
 
   const removeKey = (): void => {
@@ -106,7 +121,13 @@ export default function AssistantScreen() {
       setMessages((prev) => [...prev, { id: nextId(), role: 'assistant', content: reply }]);
     } catch (e) {
       const missing = e instanceof Error && e.message === 'AI_API_KEY_MISSING';
-      setError(missing ? t('ai.errorNoKey') : t('ai.errorGeneric'));
+      setError(
+        missing
+          ? t('ai.errorNoKey')
+          : e instanceof Error && e.message
+            ? e.message
+            : t('ai.errorGeneric')
+      );
       setHasKey((prev) => (missing ? false : prev));
     } finally {
       setSending(false);
@@ -246,9 +267,9 @@ export default function AssistantScreen() {
                   ) : null}
                   <View style={{ flex: 1 }}>
                     <GlassButton
-                      label={t('common.done')}
+                      label={testing ? t('ai.testing') : t('common.done')}
                       onPress={() => void saveKey()}
-                      disabled={!keyInput.trim()}
+                      disabled={!keyInput.trim() || testing}
                     />
                   </View>
                 </View>

@@ -91,3 +91,22 @@ export async function sendChatMessage(
     clearTimeout(timer);
   }
 }
+
+/**
+ * Anahtarın EVREN'e karşı geçerli olup olmadığını ucuz bir GET ile dener.
+ * null dönerse anahtar çalışıyor; aksi halde hata mesajı döner.
+ */
+export async function testAiKey(apiKey?: string): Promise<string | null> {
+  const key = apiKey ?? (await getAiApiKey());
+  if (!key) return 'missing';
+  try {
+    const response = await fetch(`${BASE_URL}/v1/models`, {
+      headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
+    });
+    if (response.ok) return null;
+    const data = (await response.json().catch(() => null)) as { error?: { message?: string } } | null;
+    return data?.error?.message ?? `HTTP ${response.status}`;
+  } catch (e) {
+    return e instanceof Error ? e.message : 'network';
+  }
+}

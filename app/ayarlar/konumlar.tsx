@@ -10,7 +10,7 @@ import { SettingsHeader } from '@/components/SettingsHeader';
 import { useProfile } from '@/hooks/useProfile';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { t } from '@/i18n';
-import { getCurrentPlace, hasLocationPermission, isLocationPermissionBlocked, isLocationServiceEnabled, openAppSettings } from '@/services/locationService';
+import { getCurrentPlace, hasLocationPermission, isLocationPermissionBlocked, isLocationServiceEnabled, openAppSettings, openLocationSettings } from '@/services/locationService';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { MIN_TOUCH_SIZE, spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -38,8 +38,13 @@ export default function CitiesScreen() {
 
   const addCurrentLocation = async (): Promise<void> => {
     if (busy) return;
-    // Konum servisleri kapalıysa veya izin kalıcı reddedildiyse ayarlara yönlendir.
-    if (!(await isLocationServiceEnabled()) || (await isLocationPermissionBlocked())) {
+    // Konum servisleri kapalıysa sistem konum ayarlarına, izin kalıcı
+    // reddedildiyse uygulama ayarlarına yönlendir.
+    if (!(await isLocationServiceEnabled())) {
+      openLocationSettings();
+      return;
+    }
+    if (await isLocationPermissionBlocked()) {
       openAppSettings();
       return;
     }
@@ -105,7 +110,7 @@ export default function CitiesScreen() {
             <GlassButton
               label={t('settings.locOpenSettings')}
               variant="secondary"
-              onPress={openAppSettings}
+              onPress={servicesOff ? openLocationSettings : openAppSettings}
             />
           </>
         ) : null}

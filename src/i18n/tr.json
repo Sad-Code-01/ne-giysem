@@ -349,5 +349,10 @@
   "rain.strongOnly": "Yalnızca şiddetli yağışta",
   "outfit.uvLabel": "UV",
   "outfit.cloudLabel": "Bulut",
-  "outfit.dewLabel": "Çiy"
+  "outfit.dewLabel": "Çiy",
+  "ai.testOkTitle": "Anahtar çalışıyor",
+  "ai.testOkBody": "EVREN bağlantısı doğrulandı. Artık soru sorabilirsin.",
+  "ai.testFailTitle": "Anahtar doğrulanamadı",
+  "ai.testing": "Deneniyor…",
+  "common.ok": "Tamam"
 }

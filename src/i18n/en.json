@@ -349,5 +349,10 @@
   "rain.strongOnly": "Only heavy rain",
   "outfit.uvLabel": "UV",
   "outfit.cloudLabel": "Cloud",
-  "outfit.dewLabel": "Dew"
+  "outfit.dewLabel": "Dew",
+  "ai.testOkTitle": "Key works",
+  "ai.testOkBody": "EVREN connection verified. You can start asking questions.",
+  "ai.testFailTitle": "Key could not be verified",
+  "ai.testing": "Testing…",
+  "common.ok": "OK"
 }
