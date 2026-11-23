@@ -33,6 +33,10 @@ export interface CurrentWeather {
   uvIndex: number;
   /** Görüş mesafesi (metre). */
   visibility: number;
+  /** Anlık bulutluluk (%0-100). */
+  cloudCover: number;
+  /** Çiy noktası sıcaklığı (°C). */
+  dewPoint: number;
 }
 
 /** Saatlik tahmin noktası. */

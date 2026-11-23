@@ -346,5 +346,8 @@
   "rain.umbrella": "Umbrella",
   "rain.raincoat": "Raincoat",
   "rain.both": "Either works",
-  "rain.strongOnly": "Only heavy rain"
+  "rain.strongOnly": "Only heavy rain",
+  "outfit.uvLabel": "UV",
+  "outfit.cloudLabel": "Cloud",
+  "outfit.dewLabel": "Dew"
 }

@@ -13,7 +13,7 @@ import { getWeatherVisual } from '@/logic/weatherCodes';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { radius, spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
-import type { ActivityLevel, ColdSensitivity, RainPreference } from '@/types';
+import type { ColdSensitivity } from '@/types';
 
 const COLD_OPTIONS: readonly { value: ColdSensitivity; key: string }[] = [
   { value: 'none', key: 'cold.none' },
@@ -21,19 +21,6 @@ const COLD_OPTIONS: readonly { value: ColdSensitivity; key: string }[] = [
   { value: 'normal', key: 'cold.normal' },
   { value: 'quick', key: 'cold.quick' },
   { value: 'very', key: 'cold.very' },
-];
-
-const ACTIVITY_OPTIONS: readonly { value: ActivityLevel; key: string }[] = [
-  { value: 'desk', key: 'activity.desk' },
-  { value: 'walk', key: 'activity.walk' },
-  { value: 'active', key: 'activity.active' },
-];
-
-const RAIN_OPTIONS: readonly { value: RainPreference; key: string }[] = [
-  { value: 'umbrella', key: 'rain.umbrella' },
-  { value: 'raincoat', key: 'rain.raincoat' },
-  { value: 'both', key: 'rain.both' },
-  { value: 'strong-only', key: 'rain.strongOnly' },
 ];
 
 const SCALE_CARDS = [
@@ -47,7 +34,7 @@ const SCALE_CARDS = [
 export default function ColdSettingsScreen() {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
-  const { profile, outfitProfile, setColdSensitivity, setLearnedOffset, setActivity, setRainPreference } = useProfile();
+  const { profile, outfitProfile, setColdSensitivity, setLearnedOffset } = useProfile();
   const { snapshot } = useWeatherContext();
   const [saving, setSaving] = useState(false);
 
@@ -183,66 +170,6 @@ export default function ColdSettingsScreen() {
             {t(COLD_OPTIONS.find((o) => o.value === profile.coldSensitivity)?.key ?? 'cold.normal')}
           </Text>
           <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('settings.coldMore')}</Text>
-        </View>
-
-        <Text style={[typography.micro, styles.sectionGap, { color: theme.textSecondary }]}>
-          {t('settings.activityTitle')}
-        </Text>
-        <View style={styles.scaleGrid}>
-          {ACTIVITY_OPTIONS.map((option) => {
-            const active = profile.activity === option.value;
-            return (
-              <Pressable
-                key={option.value}
-                onPress={() => void setActivity(option.value)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                style={({ pressed }) => [
-                  styles.scaleCard,
-                  {
-                    backgroundColor: active ? theme.primary : 'transparent',
-                    borderColor: active ? theme.primary : theme.line,
-                    borderWidth: 1,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
-              >
-                <Text style={[typography.caption, { color: active ? '#FFFFFF' : theme.text }]}>
-                  {t(option.key)}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        <Text style={[typography.micro, styles.sectionGap, { color: theme.textSecondary }]}>
-          {t('settings.rainTitle')}
-        </Text>
-        <View style={styles.scaleGrid}>
-          {RAIN_OPTIONS.map((option) => {
-            const active = profile.rainPreference === option.value;
-            return (
-              <Pressable
-                key={option.value}
-                onPress={() => void setRainPreference(option.value)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                style={({ pressed }) => [
-                  styles.scaleCard,
-                  {
-                    backgroundColor: active ? theme.primary : 'transparent',
-                    borderColor: active ? theme.primary : theme.line,
-                    borderWidth: 1,
-                    opacity: pressed ? 0.7 : 1,
-                  },
-                ]}
-              >
-                <Text style={[typography.caption, { color: active ? '#FFFFFF' : theme.text }]}>
-                  {t(option.key)}
-                </Text>
-              </Pressable>
-            );
-          })}
         </View>
 
         {profile.learnedOffset !== 0 ? (

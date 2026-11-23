@@ -32,12 +32,14 @@ function Orb({
   drift,
   delay,
   reduceMotion,
+  orbOpacity = 0.2,
 }: {
   color: string;
   size: number;
   drift: { x: number; y: number };
   delay: number;
   reduceMotion: boolean;
+  orbOpacity?: number;
 }) {
   const progress = useSharedValue(0);
 
@@ -66,7 +68,7 @@ function Orb({
           height: size,
           borderRadius: size / 2,
           backgroundColor: color,
-          opacity: 0.2,
+          opacity: orbOpacity,
         },
         style,
       ]}
@@ -112,11 +114,11 @@ export function ScreenBackground({
         />
       </Animated.View>
 
-      {/* Işık küreleri */}
+      {/* Işık küreleri — açık temada daha belirgin */}
       <View style={styles.orbLayer} pointerEvents="none">
-        <Orb color={palette.orbs[0]} size={ORB_SIZE} drift={{ x: 60, y: -40 }} delay={0} reduceMotion={reduceMotion} />
-        <Orb color={palette.orbs[1]} size={ORB_SIZE * 0.8} drift={{ x: -70, y: 50 }} delay={1200} reduceMotion={reduceMotion} />
-        <Orb color={palette.orbs[2]} size={ORB_SIZE * 0.65} drift={{ x: 40, y: 60 }} delay={2400} reduceMotion={reduceMotion} />
+        <Orb color={palette.orbs[0]} size={ORB_SIZE} drift={{ x: 60, y: -40 }} delay={0} reduceMotion={reduceMotion} orbOpacity={theme.isDark ? 0.2 : 0.38} />
+        <Orb color={palette.orbs[1]} size={ORB_SIZE * 0.8} drift={{ x: -70, y: 50 }} delay={1200} reduceMotion={reduceMotion} orbOpacity={theme.isDark ? 0.18 : 0.34} />
+        <Orb color={palette.orbs[2]} size={ORB_SIZE * 0.65} drift={{ x: 40, y: 60 }} delay={2400} reduceMotion={reduceMotion} orbOpacity={theme.isDark ? 0.16 : 0.3} />
       </View>
 
       {children}

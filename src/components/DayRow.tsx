@@ -64,7 +64,7 @@ export function DayRow({
               {dateLabel}
             </Text>
           </View>
-          <WeatherIcon kind={visual.kind} isDay size={26} color={theme.tabActive} />
+          <WeatherIcon kind={visual.kind} isDay size={34} color={theme.tabActive} />
           <View style={styles.end}>
             <Text style={[typography.titleS, { color: theme.text }]} numberOfLines={1}>
               {daily ? `${Math.round(daily.temperatureMax)}° / ${Math.round(daily.temperatureMin)}°` : ''}

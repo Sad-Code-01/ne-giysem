@@ -28,6 +28,8 @@ export const CURRENT_FIELDS = [
   'wind_speed_10m',
   'is_day',
   'visibility',
+  'cloud_cover',
+  'dew_point_2m',
 ] as const;
 
 /** Open-Meteo `hourly` alanları. */

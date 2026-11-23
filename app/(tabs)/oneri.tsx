@@ -237,7 +237,7 @@ export default function OutfitScreen() {
                       <WeatherIcon
                         kind={getWeatherVisual(daily.weatherCode, true).kind}
                         isDay
-                        size={30}
+                        size={38}
                         color={theme.tabActive}
                       />
                     ) : null}
@@ -285,7 +285,7 @@ export default function OutfitScreen() {
                         <WeatherIcon
                           kind={getWeatherVisual(weather.dominantCode, weather.isDay).kind}
                           isDay={weather.isDay}
-                          size={20}
+                          size={26}
                           color={theme.textSecondary}
                         />
                       ) : null}
@@ -450,7 +450,7 @@ function DailyView({
                     <WeatherIcon
                       kind={getWeatherVisual(weather.dominantCode, weather.isDay).kind}
                       isDay={weather.isDay}
-                      size={22}
+                      size={28}
                       color={ink}
                     />
                   ) : null}

@@ -13,7 +13,7 @@ interface WeatherIconProps {
 }
 
 /** Hava durumu ikonu — Meteocons flat seti (react-native-svg SvgXml). */
-export function WeatherIcon({ kind, isDay, size = 24 }: WeatherIconProps) {
+export function WeatherIcon({ kind, isDay, size = 32 }: WeatherIconProps) {
   const key = `${kind}:${isDay ? 'day' : 'night'}`;
   const xml = WEATHER_ICON_XML[key] ?? WEATHER_ICON_XML[`${kind}:day`];
   if (!xml) return null;

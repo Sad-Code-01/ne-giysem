@@ -182,7 +182,7 @@ export default function WeekScreen() {
                         <WeatherIcon
                           kind={getWeatherVisual(weather.dominantCode, weather.isDay).kind}
                           isDay={weather.isDay}
-                          size={20}
+                          size={26}
                           color={theme.textSecondary}
                         />
                       ) : null}
@@ -216,7 +216,7 @@ export default function WeekScreen() {
                         <WeatherIcon
                           kind={getWeatherVisual(point.weatherCode, point.isDay).kind}
                           isDay={point.isDay}
-                          size={18}
+                          size={24}
                           color={theme.textSecondary}
                         />
                         <Text style={[typography.caption, { color: theme.text }]}>

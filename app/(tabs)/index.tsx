@@ -1,10 +1,13 @@
 import {
   CaretRight,
+  Cloud,
   CloudRain,
   Drop,
   Eye,
   MapPin,
   NavigationArrow,
+  Sun,
+  Thermometer,
   Wind,
 } from 'phosphor-react-native';
 import { useRouter } from 'expo-router';
@@ -228,7 +231,7 @@ export default function TodayScreen() {
                       <WeatherIcon
                         kind={getWeatherVisual(weather.dominantCode, weather.isDay).kind}
                         isDay={weather.isDay}
-                        size={20}
+                        size={26}
                         color={ink}
                       />
                     ) : null}
@@ -324,6 +327,23 @@ export default function TodayScreen() {
                   <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.visibilityLabel')}</Text>
                 </View>
               ) : null}
+            </View>
+            <View style={styles.heroStatsRow}>
+              <View style={styles.heroStat}>
+                <Sun size={16} color={theme.textSecondary} weight="regular" />
+                <Text style={[typography.caption, { color: theme.text }]}>{current.uvIndex.toFixed(0)}</Text>
+                <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.uvLabel')}</Text>
+              </View>
+              <View style={styles.heroStat}>
+                <Cloud size={16} color={theme.textSecondary} weight="regular" />
+                <Text style={[typography.caption, { color: theme.text }]}>{`%${Math.round(current.cloudCover)}`}</Text>
+                <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.cloudLabel')}</Text>
+              </View>
+              <View style={styles.heroStat}>
+                <Thermometer size={16} color={theme.textSecondary} weight="regular" />
+                <Text style={[typography.caption, { color: theme.text }]}>{`${Math.round(current.dewPoint)}°`}</Text>
+                <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.dewLabel')}</Text>
+              </View>
             </View>
           </Glass>
         </Animated.View>

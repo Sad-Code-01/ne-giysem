@@ -164,6 +164,8 @@ export async function fetchOpenMeteoWeather(place: Place): Promise<WeatherSnapsh
     precipitationProbability: hourlyPrecipitation[hourIndex] ?? 0,
     uvIndex: hourlyUv[hourIndex] ?? 0,
     visibility: asNumber(currentRaw.visibility, 'current.visibility'),
+    cloudCover: asNumber(currentRaw.cloud_cover, 'current.cloud_cover'),
+    dewPoint: asNumber(currentRaw.dew_point_2m, 'current.dew_point_2m'),
   };
 
   // Saatlik seri: yalnızca bugünden sonrası (geçmiş saatler elenir, dünkü veriler gerekmez).

@@ -346,5 +346,8 @@
   "rain.umbrella": "Şemsiye",
   "rain.raincoat": "Yağmurluk",
   "rain.both": "İkisi de olur",
-  "rain.strongOnly": "Yalnızca şiddetli yağışta"
+  "rain.strongOnly": "Yalnızca şiddetli yağışta",
+  "outfit.uvLabel": "UV",
+  "outfit.cloudLabel": "Bulut",
+  "outfit.dewLabel": "Çiy"
 }
