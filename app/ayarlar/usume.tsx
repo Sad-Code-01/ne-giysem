@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Glass, ScreenBackground } from '@/components/glass';
+import { Glass, GlassButton, ScreenBackground } from '@/components/glass';
 import { SettingsHeader } from '@/components/SettingsHeader';
 import { useProfile } from '@/hooks/useProfile';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
@@ -34,7 +34,7 @@ const SCALE_CARDS = [
 export default function ColdSettingsScreen() {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
-  const { profile, outfitProfile, setColdSensitivity } = useProfile();
+  const { profile, outfitProfile, setColdSensitivity, setLearnedOffset } = useProfile();
   const { snapshot } = useWeatherContext();
   const [saving, setSaving] = useState(false);
 
@@ -171,6 +171,19 @@ export default function ColdSettingsScreen() {
           </Text>
           <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('settings.coldMore')}</Text>
         </View>
+
+        {profile.learnedOffset !== 0 ? (
+          <Glass contentStyle={styles.learnedCard}>
+            <Text style={[typography.caption, { color: theme.textSecondary }]}>
+              {t('settings.learnedNote')}
+            </Text>
+            <GlassButton
+              label={t('settings.learnedReset')}
+              variant="secondary"
+              onPress={() => void setLearnedOffset(0)}
+            />
+          </Glass>
+        ) : null}
       </ScrollView>
     </ScreenBackground>
   );
@@ -191,6 +204,9 @@ const styles = StyleSheet.create({
     width: '48%',
     flexGrow: 1,
     gap: spacing.xs,
+  },
+  learnedCard: {
+    gap: spacing.sm,
   },
   dot: {
     width: 10,

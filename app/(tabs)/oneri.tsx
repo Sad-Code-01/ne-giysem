@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import {
+  CheckCircle,
+  Snowflake,
+  Sun,
+  ThumbsDown,
+  Umbrella,
+  type Icon,
+} from 'phosphor-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorView } from '@/components/ErrorView';
@@ -22,11 +30,13 @@ import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { garmentLabel } from '@/logic/garmentCatalog';
 import { garmentIcon } from '@/logic/itemIcons';
 import { adviceLines, buildDayOutfit, defaultDayOffset, upcomingSlots } from '@/logic/outfitEngine';
+import { applyFeedbackToOffset, type OutfitFeedback } from '@/logic/feedback';
 import { groupOutfitItems, joinGarmentNames, uniqueLines } from '@/logic/outfitGrouping';
 import { buildSlotWeathers } from '@/logic/slots';
 import { getWeatherVisual } from '@/logic/weatherCodes';
 import { warningIcon } from '@/logic/warningIcons';
 import { onScrollToTopRequest } from '@/lib/scrollToTop';
+import { getFeedbackFor, recordFeedback } from '@/storage/feedback';
 import { locale, t } from '@/i18n';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { radius, SCREEN_PADDING, spacing } from '@/theme/spacing';
@@ -47,6 +57,14 @@ function dateLabel(dateKey: string): string {
 
 type ViewMode = 'daily' | 'weekly';
 
+const FEEDBACK_OPTIONS: readonly { value: OutfitFeedback; labelKey: string; icon: Icon }[] = [
+  { value: 'cold', labelKey: 'feedback.cold', icon: Snowflake },
+  { value: 'perfect', labelKey: 'feedback.perfect', icon: CheckCircle },
+  { value: 'hot', labelKey: 'feedback.hot', icon: Sun },
+  { value: 'rain', labelKey: 'feedback.rain', icon: Umbrella },
+  { value: 'dislike', labelKey: 'feedback.dislike', icon: ThumbsDown },
+];
+
 /**
  * "Ne Giysem?" sekmesi: günlük detaylı kombin (bugün/yarın) ve
  * haftalık gün gün kombin özeti; güne dokununca slot detayı açılır.
@@ -54,11 +72,13 @@ type ViewMode = 'daily' | 'weekly';
 export default function OutfitScreen() {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
-  const { outfitProfile } = useProfile();
+  const { outfitProfile, profile, setLearnedOffset } = useProfile();
   const { status, snapshot, errorKind, loadMyLocation } = useWeatherContext();
   const [mode, setMode] = useState<ViewMode>('daily');
   const [dayChoice, setDayChoice] = useState<0 | 1 | null>(null);
   const [selected, setSelected] = useState<DayOutfit | null>(null);
+  const [feedback, setFeedback] = useState<OutfitFeedback | null>(null);
+  const [feedbackLoaded, setFeedbackLoaded] = useState(false);
   const fadeStyle = useTabFade();
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
 
@@ -89,6 +109,29 @@ export default function OutfitScreen() {
       return { outfit, daily };
     });
   }, [snapshot, outfitProfile]);
+
+  // Geri bildirim yalnızca bugün (offset 0) için sorulur; gün başına bir kez.
+  const feedbackDate = dayOffset === 0 && dayOutfit ? dayOutfit.date : null;
+  useEffect(() => {
+    let live = true;
+    const date = feedbackDate;
+    void (async () => {
+      const value = date ? await getFeedbackFor(date) : null;
+      if (!live) return;
+      setFeedback(value);
+      setFeedbackLoaded(true);
+    })();
+    return () => {
+      live = false;
+    };
+  }, [feedbackDate]);
+
+  const handleFeedback = async (value: OutfitFeedback): Promise<void> => {
+    if (!feedbackDate || feedback) return;
+    setFeedback(value);
+    await recordFeedback(feedbackDate, value);
+    await setLearnedOffset(applyFeedbackToOffset(profile.learnedOffset, value));
+  };
 
   const selectedSlotWeathers = useMemo(() => {
     if (!snapshot || !selected) return [];
@@ -152,6 +195,9 @@ export default function OutfitScreen() {
             slotWeathers={slotWeathers}
             dayOffset={dayOffset}
             onDayChange={setDayChoice}
+            feedback={feedback}
+            feedbackLoaded={feedbackLoaded}
+            onFeedback={(value) => void handleFeedback(value)}
           />
         ) : (
           <View style={styles.list}>
@@ -262,11 +308,17 @@ function DailyView({
   slotWeathers,
   dayOffset,
   onDayChange,
+  feedback,
+  feedbackLoaded,
+  onFeedback,
 }: {
   outfit: DayOutfit;
   slotWeathers: ReturnType<typeof buildSlotWeathers>;
   dayOffset: number;
   onDayChange: (next: 0 | 1) => void;
+  feedback: OutfitFeedback | null;
+  feedbackLoaded: boolean;
+  onFeedback: (value: OutfitFeedback) => void;
 }) {
   const theme = useAppTheme();
   const visibleSlots = upcomingSlots(outfit);
@@ -305,6 +357,33 @@ function DailyView({
                   <GlassChip key={warning} label={warning} icon={warningIcon(warning)} tone="amber" />
                 ))}
               </View>
+            </View>
+          ) : null}
+          {dayOffset === 0 && feedbackLoaded ? (
+            <View style={styles.feedbackBlock}>
+              {feedback ? (
+                <Text style={[typography.micro, { color: theme.textSecondary }]}>
+                  {t('feedback.thanks')}
+                </Text>
+              ) : (
+                <>
+                  <Text style={[typography.micro, { color: theme.textSecondary }]}>
+                    {t('feedback.ask')}
+                  </Text>
+                  <View style={styles.chipWrap}>
+                    {FEEDBACK_OPTIONS.map((option) => (
+                      <Pressable
+                        key={option.value}
+                        onPress={() => onFeedback(option.value)}
+                        accessibilityRole="button"
+                        style={({ pressed }) => (pressed ? styles.pressed : null)}
+                      >
+                        <GlassChip label={t(option.labelKey)} icon={option.icon} />
+                      </Pressable>
+                    ))}
+                  </View>
+                </>
+              )}
             </View>
           ) : null}
         </Glass>
@@ -404,6 +483,10 @@ const styles = StyleSheet.create({
   },
   cardDesc: {
     marginTop: spacing.xs,
+  },
+  feedbackBlock: {
+    marginTop: spacing.sm,
+    gap: spacing.xs,
   },
   chipWrap: {
     flexDirection: 'row',

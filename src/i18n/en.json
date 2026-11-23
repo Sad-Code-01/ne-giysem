@@ -12,6 +12,8 @@
   "cold.very": "I get very cold",
   "settings.title": "Settings",
   "settings.coldTitle": "Weather scale",
+  "settings.learnedNote": "We adjusted your suggestions based on your feedback.",
+  "settings.learnedReset": "Reset adjustment",
   "settings.coldSubtitle": "Ranges for you and {city}.",
   "settings.coldScaleTshirt": "T-shirt weather",
   "settings.coldScaleJacket": "Jacket weather",
@@ -291,5 +293,12 @@
   "widget.partInner": "Inner",
   "widget.partMid": "Mid",
   "settings.widgetSample": "Sample",
-  "outfit.appWarnings": "In-app forecast notices"
+  "outfit.appWarnings": "In-app forecast notices",
+  "feedback.ask": "How was today?",
+  "feedback.cold": "I was cold",
+  "feedback.perfect": "Spot on",
+  "feedback.hot": "I was too warm",
+  "feedback.rain": "Got caught in the rain",
+  "feedback.dislike": "Didn't like the outfit",
+  "feedback.thanks": "Thanks for the feedback — suggestions will adjust accordingly."
 }

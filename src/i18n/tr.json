@@ -12,6 +12,8 @@
   "cold.very": "Çok üşürüm",
   "settings.title": "Ayarlar",
   "settings.coldTitle": "Hava ölçeği",
+  "settings.learnedNote": "Önerilerini geri bildirimlerine göre ayarladık.",
+  "settings.learnedReset": "Ayarlamayı sıfırla",
   "settings.coldSubtitle": "Sana ve {city} için aralıklar.",
   "settings.coldScaleTshirt": "Tişört havası",
   "settings.coldScaleJacket": "Ceket havası",
@@ -291,5 +293,12 @@
   "widget.partInner": "İç",
   "widget.partMid": "Orta",
   "settings.widgetSample": "Örnek",
-  "outfit.appWarnings": "Uygulama tahmini uyarıları"
+  "outfit.appWarnings": "Uygulama tahmini uyarıları",
+  "feedback.ask": "Bugün nasıldı?",
+  "feedback.cold": "Üşüdüm",
+  "feedback.perfect": "Tam isabet",
+  "feedback.hot": "Sıcakladım",
+  "feedback.rain": "Islak kaldım",
+  "feedback.dislike": "Kombini sevmedim",
+  "feedback.thanks": "Geri bildirimin için teşekkürler — öneriler buna göre ayarlanıyor."
 }

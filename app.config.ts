@@ -78,7 +78,15 @@ const config: ExpoConfig = {
     'expo-font',
     'expo-status-bar',
     'expo-web-browser',
-    'expo-notifications',
+    [
+      'expo-notifications',
+      {
+        // Android bildirim small-icon: tek renk alfa silüeti (renkli logo
+        // bildirim çubuğunda bulanık görünür). Üretici: scripts/generate-notification-icon.mjs
+        icon: './assets/notification-icon.png',
+        color: '#2F6FED',
+      },
+    ],
     ['react-native-android-widget', widgetConfig],
     [
       'expo-splash-screen',
