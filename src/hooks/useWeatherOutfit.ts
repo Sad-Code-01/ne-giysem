@@ -10,6 +10,7 @@ import { ServiceError, isServiceError } from '@/services/http';
 import { getCurrentPlace, requestLocationPermission } from '@/services/locationService';
 import { openMeteoProvider } from '@/services/weather/WeatherProvider';
 import { maybeSendInstantAlerts } from '@/services/instantAlertService';
+import { recordAndVerifyForecasts } from '@/services/forecastVerifier';
 import { getConsent } from '@/storage/consent';
 import { pushWidgetUpdate } from '@/widgets/resolveWidgetData';
 import {
@@ -129,6 +130,8 @@ export function useWeatherOutfit(): WeatherOutfitState {
         await setLastSnapshot(fresh);
         void pushWidgetUpdate();
         void maybeSendInstantAlerts(prev, fresh);
+        // Tahmin arşivi + doğruluk ölçümü (arka planda, hatası yutulur).
+        void recordAndVerifyForecasts(fresh).catch(() => undefined);
         // GPS'ten otomatik çekilen konum "Konumlarım" listesine de eklensin.
         if (place.source === 'gps') {
           void addCityRef.current(place);

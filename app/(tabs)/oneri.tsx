@@ -38,6 +38,7 @@ import { getWeatherVisual } from '@/logic/weatherCodes';
 import { warningIcon } from '@/logic/warningIcons';
 import { onScrollToTopRequest } from '@/lib/scrollToTop';
 import { getFeedbackFor, recordFeedback } from '@/storage/feedback';
+import { cancelFeedbackPrompt } from '@/services/notificationService';
 import { locale, t } from '@/i18n';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { radius, SCREEN_PADDING, spacing } from '@/theme/spacing';
@@ -132,6 +133,8 @@ export default function OutfitScreen() {
     if (!feedbackDate || feedback) return;
     setFeedback(value);
     await recordFeedback(feedbackDate, value);
+    // Bekleyen akşam "nasıldı?" bildirimi varsa iptal et — aynı gün iki kez sorulmaz.
+    void cancelFeedbackPrompt();
     await setLearnedOffset(applyFeedbackToOffset(profile.learnedOffset, value));
   };
 

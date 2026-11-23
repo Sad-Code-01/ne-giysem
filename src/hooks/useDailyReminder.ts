@@ -1,15 +1,32 @@
 import { useEffect } from 'react';
 
 import { NOTIFICATION_MAX_DATA_AGE_MS } from '@/constants/config';
-import { reminderContent } from '@/logic/notifications';
+import {
+  feedbackPromptContent,
+  feedbackPromptTime,
+  localDateKey,
+  nextTriggerDate,
+  reminderContent,
+} from '@/logic/notifications';
 import { useProfile } from '@/hooks/useProfile';
-import { cancelDailyReminder, scheduleDailyReminder } from '@/services/notificationService';
+import {
+  cancelDailyReminder,
+  cancelFeedbackPrompt,
+  getNotificationPermission,
+  scheduleDailyReminder,
+  scheduleFeedbackPrompt,
+} from '@/services/notificationService';
+import { getFeedbackFor } from '@/storage/feedback';
 import type { WeatherSnapshot } from '@/types';
 
 /**
  * Profil + hava verisi değiştikçe günlük hatırlatmayı yeniden planlar.
  * Veri 24 saatten eskiyse ya da hatırlatma kapalıysa iptal eder —
  * eski veriyle yanlış bilgi gönderilmez.
+ *
+ * Ayrıca akşam "Bugün nasıldı?" sorusunu (roadmap §5.2) günde en fazla
+ * bir kez planlar: hedef gün için geri bildirim zaten kayıtlıysa o gün
+ * sorulmaz, izin yoksa hiçbir şey zamanlanmaz.
  */
 export function useDailyReminder(snapshot: WeatherSnapshot | null): void {
   const { profile, outfitProfile } = useProfile();
@@ -22,7 +39,7 @@ export function useDailyReminder(snapshot: WeatherSnapshot | null): void {
       const stale =
         !snapshot || Date.now() - snapshot.fetchedAt > NOTIFICATION_MAX_DATA_AGE_MS;
       if (!notifEnabled || stale) {
-        await cancelDailyReminder();
+        await Promise.all([cancelDailyReminder(), cancelFeedbackPrompt()]);
         return;
       }
       if (cancelled) return;
@@ -36,6 +53,21 @@ export function useDailyReminder(snapshot: WeatherSnapshot | null): void {
         title,
         body,
       });
+
+      // Akşam geri bildirim sorusu: tek seferlik, izin varsa ve o gün
+      // için cevap yoksa. Cevaplanmışsa bir sonraki güne kayar.
+      const permitted = await getNotificationPermission();
+      if (cancelled || !permitted) {
+        await cancelFeedbackPrompt();
+        return;
+      }
+      const { hour: pHour, minute: pMinute } = feedbackPromptTime(notifHour, notifMinute);
+      let target = nextTriggerDate(pHour, pMinute);
+      if (await getFeedbackFor(localDateKey(target))) {
+        target = new Date(target.getTime() + 24 * 60 * 60 * 1000);
+      }
+      const prompt = feedbackPromptContent();
+      await scheduleFeedbackPrompt({ date: target, title: prompt.title, body: prompt.body });
     })();
 
     return () => {

@@ -107,3 +107,37 @@ export async function cancelDailyReminder(): Promise<void> {
     // Planlanmış bildirim yoksa sorun değil.
   }
 }
+
+/** Akşam "Bugün nasıldı?" sorusunun tek seferlik bildirim kimliği. */
+const FEEDBACK_PROMPT_ID = 'negiysem:aksam-soru';
+
+/**
+ * Geri bildirim sorusunu TEK sefere planlar (DATE trigger). Her uygulama
+ * açılışında güncel durumla yeniden kurulur; kullanıcı o gün cevapladıysa
+ * planlayan taraf hiç zamanlamaz, cevap anında bekleyen soru iptal edilir.
+ */
+export async function scheduleFeedbackPrompt(params: {
+  date: Date;
+  title: string;
+  body: string;
+}): Promise<void> {
+  ensureHandler();
+  await ensureAndroidChannel();
+  await cancelFeedbackPrompt();
+  await Notifications.scheduleNotificationAsync({
+    identifier: FEEDBACK_PROMPT_ID,
+    content: { title: params.title, body: params.body },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: params.date,
+    },
+  });
+}
+
+export async function cancelFeedbackPrompt(): Promise<void> {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(FEEDBACK_PROMPT_ID);
+  } catch {
+    // Planlanmış bildirim yoksa sorun değil.
+  }
+}

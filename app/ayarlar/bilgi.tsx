@@ -1,5 +1,5 @@
-import { CloudSun, GraduationCap, MapPin, Thermometer } from 'phosphor-react-native';
-import { useEffect, useRef, type ComponentRef } from 'react';
+import { CloudSun, GraduationCap, MapPin, Target, Thermometer } from 'phosphor-react-native';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,8 @@ import { Glass, IconBadge, ScreenBackground } from '@/components/glass';
 import { SettingsHeader } from '@/components/SettingsHeader';
 import { useTabFade } from '@/hooks/useTabFade';
 import { onScrollToTopRequest } from '@/lib/scrollToTop';
+import type { AccuracySummary } from '@/logic/forecastScore';
+import { getAccuracySummary } from '@/storage/forecastArchive';
 import { t } from '@/i18n';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { SCREEN_PADDING, spacing } from '@/theme/spacing';
@@ -27,6 +29,17 @@ export default function InfoScreen() {
   const insets = useSafeAreaInsets();
   const fadeStyle = useTabFade();
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
+  const [accuracy, setAccuracy] = useState<AccuracySummary | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    void getAccuracySummary().then((summary) => {
+      if (live) setAccuracy(summary);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   useEffect(
     () =>
@@ -67,6 +80,22 @@ export default function InfoScreen() {
               </Animated.View>
             ))}
           </View>
+
+          <Glass contentStyle={styles.card}>
+            <IconBadge icon={Target} size={20} boxSize={40} />
+            <View style={styles.cardText}>
+              <Text style={[typography.titleS, { color: theme.text }]}>{t('info.accuracyTitle')}</Text>
+              <Text style={[typography.caption, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
+                {accuracy && accuracy.count > 0 && accuracy.avgBrier !== null
+                  ? t('info.accuracyBody', {
+                      count: accuracy.count,
+                      hit: Math.round((1 - accuracy.avgBrier) * 100),
+                      temp: accuracy.avgTempError === null ? '—' : accuracy.avgTempError.toFixed(1),
+                    })
+                  : t('info.accuracyEmpty')}
+              </Text>
+            </View>
+          </Glass>
 
           <Text style={[typography.micro, styles.footer, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
             {t('info.footer')}

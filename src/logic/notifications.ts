@@ -50,3 +50,31 @@ export function reminderContent(
     body,
   };
 }
+
+/** Date → "YYYY-MM-DD" (yerel saat). */
+export function localDateKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Akşam "Bugün nasıldı?" sorusu için saat (roadmap §5.2).
+ * Akşam hatırlatması varsa ondan ~1 saat sonra; sabahçıysa 20:00.
+ * Asla gece yarısını geçmeyecek şekilde 23:00'te sınırlanır.
+ */
+export function feedbackPromptTime(notifHour: number, notifMinute: number): { hour: number; minute: number } {
+  if (notifHour >= 12) {
+    return { hour: Math.min(notifHour + 1, 23), minute: notifMinute };
+  }
+  return { hour: 20, minute: 0 };
+}
+
+/** Geri bildirim sorusu bildirimi içeriği. */
+export function feedbackPromptContent(): { title: string; body: string } {
+  return {
+    title: t('feedback.ask'),
+    body: t('notif.feedbackBody'),
+  };
+}
