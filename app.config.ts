@@ -49,7 +49,7 @@ const config: ExpoConfig = {
   version: '1.0.0',
   orientation: 'portrait',
   scheme: 'negiysem',
-  icon: './assets/icon.png',
+  icon: './assets/favicon.png',
   userInterfaceStyle: 'automatic',
   ios: {
     supportsTablet: false,
@@ -63,9 +63,9 @@ const config: ExpoConfig = {
     package: 'com.sadcode.negiysem',
     softwareKeyboardLayoutMode: 'resize',
     adaptiveIcon: {
-      // foreground: assets/icon.png (1024×1024 RGBA — güvenli bölgeye dikkat)
+      // foreground: assets/favicon.png (512×512 — güvenli bölgeye dikkat)
       // backgroundImage/monochromeImage yoksa backgroundColor kullanılır.
-      foregroundImage: './assets/icon.png',
+      foregroundImage: './assets/favicon.png',
       backgroundColor: '#E6F4FE',
     },
     predictiveBackGestureEnabled: false,
@@ -83,7 +83,7 @@ const config: ExpoConfig = {
     [
       'expo-splash-screen',
       {
-        image: './assets/splash-icon.png',
+        image: './assets/favicon.png',
         imageWidth: 160,
         resizeMode: 'contain',
         backgroundColor: '#F1F0EA',

@@ -192,7 +192,7 @@ export default function WelcomeScreen() {
     <ScreenBackground kind="partly">
       {/* Şeffaf logolu marka filigranı — tüm adımların arkasında */}
       <Image
-        source={require('../assets/icon.png')}
+        source={require('../assets/favicon.png')}
         style={styles.bgLogo}
         resizeMode="contain"
         accessibilityElementsHidden

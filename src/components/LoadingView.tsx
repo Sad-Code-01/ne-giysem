@@ -30,7 +30,7 @@ export function LoadingView() {
     <View style={styles.wrap}>
       <Animated.View style={logoStyle}>
         <Image
-          source={require('../../assets/icon.png')}
+          source={require('../../assets/favicon.png')}
           style={styles.logo}
           resizeMode="contain"
           accessibilityElementsHidden
