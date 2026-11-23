@@ -236,5 +236,6 @@ export function toOutfitProfile(profile: StoredProfile): OutfitProfile {
     coldSensitivity: profile.coldSensitivity,
     transport: 'walk',
     learnedOffset: profile.learnedOffset,
+    wardrobe: profile.wardrobe,
   };
 }

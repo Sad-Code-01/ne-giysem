@@ -10,6 +10,7 @@ interface GeocodingResult {
   country?: unknown;
   admin1?: unknown;
   admin2?: unknown;
+  country_code?: unknown;
 }
 
 interface GeocodingResponse {
@@ -36,8 +37,10 @@ export async function searchCities(query: string, countryCode?: string | null): 
     `${GEOCODING_API_URL}?name=${encodeURIComponent(trimmed)}` +
     '&count=8&language=tr&format=json';
   // Ülke süzgeci verilirse yalnızca o ülkedeki sonuçlar döner (varsayılan: Türkiye).
-  if (countryCode) {
-    url += `&country_code=${encodeURIComponent(countryCode)}`;
+  // API küçük harf ISO kodu bekler; istemci tarafında da doğrulanır.
+  const code = countryCode?.toLowerCase() ?? null;
+  if (code) {
+    url += `&country_code=${encodeURIComponent(code)}`;
   }
 
   const response = await fetchJson<GeocodingResponse>(url);
@@ -52,6 +55,13 @@ export async function searchCities(query: string, countryCode?: string | null): 
     const admin1 = optionalString(candidate.admin1);
     const admin2 = optionalString(candidate.admin2);
     const country = optionalString(candidate.country);
+
+    // Sunucu süzgeci yeterli değilse istemci tarafında da ülkeyi doğrula —
+    // seçili ülke dışındaki sonuçlar listeye hiç girmesin.
+    if (code) {
+      const resultCode = optionalString(candidate.country_code).toLowerCase();
+      if (resultCode && resultCode !== code) continue;
+    }
 
     places.push({
       name: candidate.name,

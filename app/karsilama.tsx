@@ -26,7 +26,7 @@ import { t } from '@/i18n';
 import { acceptConsent } from '@/storage/consent';
 import { setOnboardingDone } from '@/storage/cache';
 import { requestNotificationPermission } from '@/services/notificationService';
-import { isLocationPermissionBlocked, openAppSettings } from '@/services/locationService';
+import { isLocationPermissionBlocked, isLocationServiceEnabled, openAppSettings } from '@/services/locationService';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { BORDER_WIDTH, MIN_TOUCH_SIZE, radius, spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -110,6 +110,11 @@ export default function WelcomeScreen() {
 
   const handleUseLocation = async (): Promise<void> => {
     if (locationBusy) return;
+    // Cihaz konum servisleri kapalıysa sistem kendisi açamaz — ayarlara yönlendir.
+    if (!(await isLocationServiceEnabled())) {
+      openAppSettings();
+      return;
+    }
     // İzin kalıcı reddedildiyse sistem diyaloğu açılmaz — ayarlara yönlendir.
     if (await isLocationPermissionBlocked()) {
       openAppSettings();

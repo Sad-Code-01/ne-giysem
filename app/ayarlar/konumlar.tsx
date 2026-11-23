@@ -38,8 +38,8 @@ export default function CitiesScreen() {
 
   const addCurrentLocation = async (): Promise<void> => {
     if (busy) return;
-    // İzin kalıcı reddedildiyse sistem diyaloğu açılmaz — ayarlara yönlendir.
-    if (await isLocationPermissionBlocked()) {
+    // Konum servisleri kapalıysa veya izin kalıcı reddedildiyse ayarlara yönlendir.
+    if (!(await isLocationServiceEnabled()) || (await isLocationPermissionBlocked())) {
       openAppSettings();
       return;
     }

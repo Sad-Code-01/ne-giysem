@@ -8,6 +8,7 @@ import {
   isStormCode,
 } from '@/logic/weatherCodes';
 import { addDays, buildSlotWeathers, dayKeyOf } from '@/logic/slots';
+import { applyWardrobe } from '@/logic/wardrobe';
 import type {
   DayAlert,
   DayOutfit,
@@ -265,9 +266,17 @@ export function buildDayOutfit(
   const date = addDays(today, dayOffset);
   const slotWeathers = buildSlotWeathers(snapshot, date, profile);
 
-  const slots: SlotOutfit[] = slotWeathers.map((slotWeather) =>
-    buildSlotOutfit(slotWeather, snapshot.current.humidity)
-  );
+  const wardrobeIds = profile.wardrobe?.length ? new Set(profile.wardrobe) : null;
+  const slots: SlotOutfit[] = slotWeathers.map((slotWeather) => {
+    const outfit = buildSlotOutfit(slotWeather, snapshot.current.humidity);
+    if (!wardrobeIds) return outfit;
+    const items = applyWardrobe(outfit.items, wardrobeIds);
+    const hero =
+      items.find((item) => item.category === 'outer') ??
+      items.find((item) => item.category === 'top') ??
+      items[0];
+    return { ...outfit, items, hero };
+  });
 
   // Geçmiş dilimler "bugünün geleceği" gibi sunulmasın: başlık, kahraman,
   // uyarılar ve akşam analizi yalnızca henüz bitmemiş dilimlerden üretilir.

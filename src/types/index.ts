@@ -236,6 +236,8 @@ export interface OutfitProfile {
   transport: TransportMode;
   /** Öğrenilen ofset, −3…+3 (6.10). */
   learnedOffset: number;
+  /** Gardırop: kullanıcının sahip olduğu garment id'leri (opsiyonel). */
+  wardrobe?: string[];
 }
 
 /** Hava/kalıcı hata türleri. */
