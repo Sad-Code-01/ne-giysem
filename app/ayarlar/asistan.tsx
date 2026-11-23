@@ -70,6 +70,12 @@ export default function AssistantScreen() {
     setTesting(true);
     try {
       await setAiApiKey(trimmed);
+    } catch {
+      setTesting(false);
+      Alert.alert(t('ai.testFailTitle'), t('ai.saveFail'));
+      return;
+    }
+    try {
       const problem = await testAiKey(trimmed);
       if (problem === 'missing') return;
       if (problem) {

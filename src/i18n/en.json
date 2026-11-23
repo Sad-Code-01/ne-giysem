@@ -354,5 +354,6 @@
   "ai.testOkBody": "EVREN connection verified. You can start asking questions.",
   "ai.testFailTitle": "Key could not be verified",
   "ai.testing": "Testing…",
-  "common.ok": "OK"
+  "common.ok": "OK",
+  "ai.saveFail": "Could not save the key. Try again."
 }

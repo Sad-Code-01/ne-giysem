@@ -354,5 +354,6 @@
   "ai.testOkBody": "EVREN bağlantısı doğrulandı. Artık soru sorabilirsin.",
   "ai.testFailTitle": "Anahtar doğrulanamadı",
   "ai.testing": "Deneniyor…",
-  "common.ok": "Tamam"
+  "common.ok": "Tamam",
+  "ai.saveFail": "Anahtar kaydedilemedi. Tekrar dene."
 }
