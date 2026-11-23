@@ -11,7 +11,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { PaperPlaneTilt, Sparkle } from 'phosphor-react-native';
+import { PaperPlaneTilt, Sparkle, Trash } from 'phosphor-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Glass, GlassButton, ScreenBackground } from '@/components/glass';
@@ -34,6 +34,8 @@ function nextId(): string {
   messageSeq += 1;
   return `m${messageSeq}`;
 }
+
+const SUGGESTIONS = ['ai.sug1', 'ai.sug2', 'ai.sug3'] as const;
 
 /** AI Asistan: kullanıcının kendi EVREN API anahtarıyla çalışan sohbet. */
 export default function AssistantScreen() {
@@ -86,16 +88,15 @@ export default function AssistantScreen() {
     ]);
   };
 
-  const send = async (): Promise<void> => {
-    const text = input.trim();
+  const send = async (preset?: string): Promise<void> => {
+    const text = (preset ?? input).trim();
     if (!text || sending || !hasKey) return;
 
-    const userMsg: UiMessage = { id: nextId(), role: 'user', content: text };
     const history: ChatMessage[] = [
       ...messages.map(({ role, content }) => ({ role, content })),
       { role: 'user', content: text },
     ];
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...prev, { id: nextId(), role: 'user', content: text }]);
     setInput('');
     setError(null);
     setSending(true);
@@ -109,14 +110,22 @@ export default function AssistantScreen() {
       setHasKey((prev) => (missing ? false : prev));
     } finally {
       setSending(false);
-      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
     }
+  };
+
+  const scrollToEnd = (): void => {
+    requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
   };
 
   const renderMessage = ({ item }: { item: UiMessage }) => {
     const mine = item.role === 'user';
     return (
       <View style={[styles.bubbleRow, mine ? styles.bubbleRowEnd : styles.bubbleRowStart]}>
+        {!mine ? (
+          <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+            <Sparkle size={14} color="#FFFFFF" weight="fill" />
+          </View>
+        ) : null}
         <View
           style={[
             styles.bubble,
@@ -134,6 +143,38 @@ export default function AssistantScreen() {
     );
   };
 
+  const renderEmpty = () => (
+    <View style={styles.empty}>
+      <View style={[styles.emptyIcon, { backgroundColor: theme.primary }]}>
+        <Sparkle size={26} color="#FFFFFF" weight="fill" />
+      </View>
+      <Text style={[typography.titleS, { color: theme.text }]}>{t('ai.welcomeTitle')}</Text>
+      <Text style={[typography.caption, styles.emptyHint, { color: theme.textSecondary }]}>
+        {t('ai.welcomeBody')}
+      </Text>
+      <View style={styles.suggestions}>
+        {SUGGESTIONS.map((key) => (
+          <Pressable
+            key={key}
+            onPress={() => void send(t(key))}
+            disabled={sending}
+            accessibilityRole="button"
+            style={({ pressed }) => [
+              styles.suggestionChip,
+              {
+                backgroundColor: theme.surface,
+                borderColor: theme.line,
+                opacity: pressed || sending ? 0.6 : 1,
+              },
+            ]}
+          >
+            <Text style={[typography.caption, { color: theme.text }]}>{t(key)}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+
   return (
     <ScreenBackground kind="partly">
       <SettingsHeader title={t('ai.title')} />
@@ -149,6 +190,9 @@ export default function AssistantScreen() {
               <ActivityIndicator color={theme.tabActive} />
             ) : hasKey && !showKeyEditor ? (
               <View style={styles.keyRow}>
+                <View style={[styles.keyIcon, { backgroundColor: theme.primary }]}>
+                  <Sparkle size={16} color="#FFFFFF" weight="fill" />
+                </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={[typography.body, { color: theme.text }]}>{t('ai.keySaved')}</Text>
                   <Text style={[typography.micro, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
@@ -158,8 +202,13 @@ export default function AssistantScreen() {
                 <Pressable onPress={() => setShowKeyEditor(true)} accessibilityRole="button" style={styles.keyAction}>
                   <Text style={[typography.caption, { color: theme.tabActive }]}>{t('ai.changeKey')}</Text>
                 </Pressable>
-                <Pressable onPress={removeKey} accessibilityRole="button" style={styles.keyAction}>
-                  <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('common.delete')}</Text>
+                <Pressable
+                  onPress={removeKey}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('common.delete')}
+                  style={styles.keyAction}
+                >
+                  <Trash size={18} color={theme.textSecondary} />
                 </Pressable>
               </View>
             ) : (
@@ -217,17 +266,14 @@ export default function AssistantScreen() {
                 renderItem={renderMessage}
                 contentContainerStyle={styles.list}
                 showsVerticalScrollIndicator={false}
-                ListEmptyComponent={
-                  <View style={styles.empty}>
-                    <Sparkle size={28} color={theme.tabActive} />
-                    <Text style={[typography.caption, { color: theme.textSecondary }]}>
-                      {t('ai.emptyHint')}
-                    </Text>
-                  </View>
-                }
+                onContentSizeChange={scrollToEnd}
+                ListEmptyComponent={renderEmpty}
                 ListFooterComponent={
                   sending ? (
                     <View style={styles.bubbleRow}>
+                      <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+                        <Sparkle size={14} color="#FFFFFF" weight="fill" />
+                      </View>
                       <View style={[styles.bubble, { backgroundColor: theme.surface, borderColor: theme.line }]}>
                         <ActivityIndicator size="small" color={theme.tabActive} />
                       </View>
@@ -290,6 +336,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     minHeight: MIN_TOUCH_SIZE,
   },
+  keyIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   keyAction: {
     minHeight: MIN_TOUCH_SIZE,
     justifyContent: 'center',
@@ -314,14 +367,49 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.xxl,
   },
+  emptyIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  emptyHint: {
+    textAlign: 'center',
+    maxWidth: 300,
+  },
+  suggestions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  suggestionChip: {
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
   bubbleRow: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.xs,
   },
   bubbleRowEnd: {
     justifyContent: 'flex-end',
   },
   bubbleRowStart: {
     justifyContent: 'flex-start',
+  },
+  avatar: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
   },
   bubble: {
     maxWidth: '82%',
