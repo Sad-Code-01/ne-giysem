@@ -83,7 +83,7 @@ describe('buildSlotWeathers — özet alanlar', () => {
         temperature: 20,
         apparentTemperature: 20,
         precipitationProbability: h === 9 ? 70 : 10,
-        precipitationMm: 0,
+        precipitationMm: h === 9 ? 2.5 : 0,
         weatherCode: h === 9 ? 61 : 3,
         windSpeed: h === 14 ? 40 : 5,
         uvIndex: h === 13 ? 8 : 1,
@@ -93,6 +93,7 @@ describe('buildSlotWeathers — özet alanlar', () => {
     const snapshot = makeSnapshot({ hourly: hours });
     const slots = buildSlotWeathers(snapshot, TODAY, TEST_PROFILE);
     expect(slots[0].precipitationProbabilityMax).toBe(70);
+    expect(slots[0].precipitationMaxMm).toBeCloseTo(2.5, 5);
     expect(slots[1].maxWind).toBe(40);
     expect(slots[1].maxUv).toBe(8);
   });

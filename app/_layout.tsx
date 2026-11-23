@@ -5,11 +5,12 @@ import {
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
 import { useFonts } from 'expo-font';
+import { NavigationBar } from 'expo-navigation-bar';
 import { Stack, useRouter } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useDailyReminder } from '@/hooks/useDailyReminder';
@@ -88,6 +89,10 @@ export default function RootLayout() {
     if (ready) void SplashScreen.hideAsync();
   }, [ready]);
 
+  // Android sistem gezinme çubuğu buton kontrastı temayla uyumlu olsun —
+  // koyu temada açık ikonlar, açık temada koyu ikonlar (beyaz şerit flaşı yok).
+  const navBarStyle = theme.isDark ? 'dark' : 'light';
+
   if (!ready) {
     return (
       <View style={[styles.loading, { backgroundColor: theme.bg }]}>
@@ -103,7 +108,15 @@ export default function RootLayout() {
           <ReminderScheduler />
           <OnboardingRedirect active={gate === 'onboarding'} />
           <StatusBar style={theme.isDark ? 'light' : 'dark'} />
-          <Stack screenOptions={{ headerShown: false }}>
+          {Platform.OS === 'android' ? <NavigationBar style={navBarStyle} /> : null}
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              // Ekran geçişlerinde varsayılan beyaz zemin koyu temada
+              // "beyaz flaş" üretir — zemin her zaman tema rengi.
+              contentStyle: { backgroundColor: theme.bg },
+            }}
+          >
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="karsilama" />
             <Stack.Screen name="ayarlar/usume" />
