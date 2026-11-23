@@ -18,6 +18,8 @@ import {
   setNotifEnabled,
   setNotifSchedule,
   setWidgetBg,
+  setInstantAlerts,
+  toggleWardrobeItem,
   toOutfitProfile,
   type NotificationPeriod,
   type StoredProfile,
@@ -40,6 +42,9 @@ interface ProfileContextValue {
   setNotifEnabled: (value: boolean) => Promise<void>;
   setNotifSchedule: (period: NotificationPeriod, hour: number, minute: number) => Promise<void>;
   setWidgetBg: (value: WidgetBgMode) => Promise<void>;
+  setInstantAlerts: (value: boolean) => Promise<void>;
+  /** Gardıroba parça ekler/çıkarır (garment id). */
+  toggleWardrobeItem: (garmentId: string) => Promise<void>;
   addCity: (place: Place) => Promise<void>;
   removeCity: (place: Place) => Promise<void>;
   /** Tüm profil verilerini varsayılanlara sıfırlar. */
@@ -80,6 +85,12 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         setProfile(await setWidgetBg(mode));
         void pushWidgetUpdate();
       },
+      setInstantAlerts: async (enabled) => {
+        setProfile(await setInstantAlerts(enabled));
+      },
+      toggleWardrobeItem: async (garmentId) => {
+        setProfile(await toggleWardrobeItem(garmentId));
+      },
       setNotifEnabled: async (enabled) => {
         setProfile(await setNotifEnabled(enabled));
       },
@@ -116,6 +127,8 @@ export function useProfile(): ProfileContextValue {
         notifHour: 21,
         notifMinute: 0,
         widgetBg: 'solid',
+        wardrobe: [],
+        instantAlerts: false,
       },
       outfitProfile: { coldSensitivity: 'normal', transport: 'walk', learnedOffset: 0 },
       setColdSensitivity: async () => undefined,
@@ -123,6 +136,8 @@ export function useProfile(): ProfileContextValue {
       setNotifEnabled: async () => undefined,
       setNotifSchedule: async () => undefined,
       setWidgetBg: async () => undefined,
+      setInstantAlerts: async () => undefined,
+      toggleWardrobeItem: async () => undefined,
       addCity: async () => undefined,
       removeCity: async () => undefined,
       resetProfile: async () => undefined,

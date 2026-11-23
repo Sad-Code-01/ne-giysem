@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { LockSimple } from 'phosphor-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -28,30 +28,32 @@ function pad2(value: number): string {
 export default function NotificationSettingsScreen() {
   const theme = useAppTheme();
   const insets = useSafeAreaInsets();
-  const { profile, setNotifEnabled, setNotifSchedule } = useProfile();
+  const { profile, setNotifEnabled, setNotifSchedule, setInstantAlerts } = useProfile();
   const [denied, setDenied] = useState(false);
-  // Kullanıcı tekerleği oynatınca taslak oluşur; "Tamam" ile kaydedilir.
+  // Tekerlek yalnızca düzenleme modunda açık; onaylanınca özet satırına daralır.
+  const [editingTime, setEditingTime] = useState(false);
   const [draft, setDraft] = useState<{ hour: number; minute: number } | null>(null);
   const shownHour = draft?.hour ?? profile.notifHour;
   const shownMinute = draft?.minute ?? profile.notifMinute;
 
+  /** Bildirim izni akışı: açıklama → sistem diyaloğu. İzin verilirse true. */
+  const ensurePermission = async (): Promise<boolean> => {
+    if (await getNotificationPermission()) return true;
+    const approved = await new Promise<boolean>((resolve) => {
+      Alert.alert(t('settings.notifPermTitle'), t('settings.notifPermBody'), [
+        { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
+        { text: t('common.allow'), onPress: () => resolve(true) },
+      ]);
+    });
+    if (!approved) return false;
+    const granted = await requestNotificationPermission();
+    setDenied(!granted);
+    return granted;
+  };
+
   const handleToggle = async (value: boolean): Promise<void> => {
     if (value) {
-      // İzin henüz yoksa sistem diyaloğundan önce kısa açıklama göster.
-      if (!(await getNotificationPermission())) {
-        const approved = await new Promise<boolean>((resolve) => {
-          Alert.alert(t('settings.notifPermTitle'), t('settings.notifPermBody'), [
-            { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
-            { text: t('common.allow'), onPress: () => resolve(true) },
-          ]);
-        });
-        if (!approved) return;
-      }
-      const granted = await requestNotificationPermission();
-      if (!granted) {
-        setDenied(true);
-        return;
-      }
+      if (!(await ensurePermission())) return;
       setDenied(false);
     } else {
       // Açık durumdayken kapatma yanlışlıkla olmasın diye onay iste.
@@ -72,9 +74,15 @@ export default function NotificationSettingsScreen() {
 
   const handleTimeConfirm = (): void => {
     if (!draft) return;
-    void setNotifSchedule(periodForHour(draft.hour), draft.hour, draft.minute).then(() =>
-      setDraft(null)
-    );
+    void setNotifSchedule(periodForHour(draft.hour), draft.hour, draft.minute).then(() => {
+      setDraft(null);
+      setEditingTime(false);
+    });
+  };
+
+  const handleInstantToggle = async (value: boolean): Promise<void> => {
+    if (value && !(await ensurePermission())) return;
+    await setInstantAlerts(value);
   };
 
   const nextAt = nextTriggerDate(profile.notifHour, profile.notifMinute);
@@ -109,18 +117,68 @@ export default function NotificationSettingsScreen() {
           {profile.notifEnabled ? (
             <>
               <View style={styles.divider} />
-              <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('ob.notifTime')}</Text>
-              <TimeWheel hour={shownHour} minute={shownMinute} onChange={handleTimeChange} />
-              <GlassButton
-                label={t('common.done')}
-                onPress={handleTimeConfirm}
-                disabled={draft === null}
-              />
+              {editingTime ? (
+                <>
+                  <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('ob.notifTime')}</Text>
+                  <TimeWheel hour={shownHour} minute={shownMinute} onChange={handleTimeChange} />
+                  <View style={styles.timeActions}>
+                    <View style={{ flex: 1 }}>
+                      <GlassButton
+                        label={t('common.cancel')}
+                        variant="secondary"
+                        onPress={() => {
+                          setDraft(null);
+                          setEditingTime(false);
+                        }}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <GlassButton
+                        label={t('common.done')}
+                        onPress={handleTimeConfirm}
+                        disabled={draft === null}
+                      />
+                    </View>
+                  </View>
+                </>
+              ) : (
+                <Pressable
+                  onPress={() => setEditingTime(true)}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [styles.timeSummary, pressed && { opacity: 0.7 }]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[typography.caption, { color: theme.textSecondary }]}>{t('ob.notifTime')}</Text>
+                    <Text style={[typography.titleM, { color: theme.text }]}>
+                      {pad2(shownHour)}:{pad2(shownMinute)}
+                    </Text>
+                  </View>
+                  <Text style={[typography.caption, { color: theme.tabActive }]}>{t('settings.timeEdit')}</Text>
+                </Pressable>
+              )}
               <Text style={[typography.micro, { color: theme.textSecondary }]}>
                 {t('settings.notifNext', { time: nextLabel })}
               </Text>
             </>
           ) : null}
+        </Glass>
+
+        <Glass>
+          <View style={styles.row}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[typography.body, { color: theme.text }]}>{t('settings.instantTitle')}</Text>
+              <Text style={[typography.micro, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
+                {t('settings.instantSubtitle')}
+              </Text>
+            </View>
+            <Switch
+              value={profile.instantAlerts}
+              onValueChange={(value) => void handleInstantToggle(value)}
+              trackColor={{ false: theme.line, true: theme.primary }}
+              thumbColor={theme.surface}
+              accessibilityLabel={t('settings.instantTitle')}
+            />
+          </View>
         </Glass>
 
         {denied ? (
@@ -148,5 +206,15 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     backgroundColor: 'rgba(127,140,160,0.25)',
+  },
+  timeSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: MIN_TOUCH_SIZE,
+  },
+  timeActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
 });

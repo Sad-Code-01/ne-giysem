@@ -28,6 +28,10 @@ export interface StoredProfile {
   notifMinute: number;
   /** Widget arka plan saydamlığı. */
   widgetBg: WidgetBgMode;
+  /** Mini gardırop: kullanıcının sahip olduğu garment id'leri (tekrar edebilir). */
+  wardrobe: string[];
+  /** Anlık hava değişimi bildirimleri (yağmur, sert düşüş, fırtına). */
+  instantAlerts: boolean;
 }
 
 export const DEFAULT_STORED_PROFILE: StoredProfile = {
@@ -39,6 +43,8 @@ export const DEFAULT_STORED_PROFILE: StoredProfile = {
   notifHour: NOTIFICATION_DEFAULTS.hour,
   notifMinute: NOTIFICATION_DEFAULTS.minute,
   widgetBg: 'solid',
+  wardrobe: [],
+  instantAlerts: false,
 };
 
 const COLD_SENSITIVITIES: readonly ColdSensitivity[] = ['none', 'little', 'normal', 'quick', 'very'];
@@ -100,6 +106,10 @@ function sanitize(raw: unknown): StoredProfile {
     widgetBg: WIDGET_BG_MODES.includes(raw.widgetBg as WidgetBgMode)
       ? (raw.widgetBg as WidgetBgMode)
       : DEFAULT_STORED_PROFILE.widgetBg,
+    wardrobe: Array.isArray(raw.wardrobe)
+      ? raw.wardrobe.filter((item): item is string => typeof item === 'string')
+      : [],
+    instantAlerts: raw.instantAlerts === true,
   };
 }
 
@@ -168,6 +178,26 @@ export async function setNotifSchedule(
 export async function setWidgetBg(value: WidgetBgMode): Promise<StoredProfile> {
   const profile = await getStoredProfile();
   const next = { ...profile, widgetBg: value };
+  await save(next);
+  return next;
+}
+
+export async function setInstantAlerts(value: boolean): Promise<StoredProfile> {
+  const profile = await getStoredProfile();
+  const next = { ...profile, instantAlerts: value };
+  await save(next);
+  return next;
+}
+
+/** Gardıroba parça ekler/çıkarır (aynı id iki kez eklenirse ikisi de kalır). */
+export async function toggleWardrobeItem(garmentId: string): Promise<StoredProfile> {
+  const profile = await getStoredProfile();
+  const index = profile.wardrobe.indexOf(garmentId);
+  const wardrobe =
+    index === -1
+      ? [...profile.wardrobe, garmentId]
+      : profile.wardrobe.filter((_, i) => i !== index);
+  const next = { ...profile, wardrobe };
   await save(next);
   return next;
 }

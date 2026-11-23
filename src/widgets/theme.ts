@@ -19,7 +19,8 @@ export interface WidgetPalette {
 const BG_ALPHA: Record<WidgetBgMode, number> = {
   solid: 1,
   translucent: 0.72,
-  clear: 0.38,
+  // 'clear' = tamamen arkaplansız (launcher duvar kağıdı görünür).
+  clear: 0,
 };
 
 // RemoteViews renkleri #RRGGBB ve rgba(...) kabul eder; palet tipi Hex kalır.

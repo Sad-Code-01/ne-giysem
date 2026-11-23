@@ -300,5 +300,18 @@
   "feedback.hot": "I was too warm",
   "feedback.rain": "Got caught in the rain",
   "feedback.dislike": "Didn't like the outfit",
-  "feedback.thanks": "Thanks for the feedback — suggestions will adjust accordingly."
+  "feedback.thanks": "Thanks for the feedback — suggestions will adjust accordingly.",
+  "settings.timeEdit": "Change",
+  "settings.instantTitle": "Instant weather alerts",
+  "settings.instantSubtitle": "Get notified when weather changes noticeably (rain starts, sudden cooling, storm risk). At most once per type per day.",
+  "alert.stormTitle": "Weather turning severe",
+  "alert.stormBody": "Storm, heavy snow or extreme wind is expected — check official warnings before going out.",
+  "alert.rainTitle": "Rain chance increased",
+  "alert.rainBody": "Today's rain probability rose significantly — consider an umbrella or waterproof coat.",
+  "alert.coldTitle": "Sudden temperature drop",
+  "alert.coldBody": "Expected temperature dropped at least 5° vs the last forecast — review your outfit.",
+  "wardrobe.title": "Wardrobe",
+  "wardrobe.subtitle": "Mark the pieces you own; owned items are highlighted in suggestions.",
+  "wardrobe.empty": "No items yet. Mark the clothes in your wardrobe below.",
+  "wardrobe.owned": "In your wardrobe"
 }

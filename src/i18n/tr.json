@@ -300,5 +300,18 @@
   "feedback.hot": "Sıcakladım",
   "feedback.rain": "Islak kaldım",
   "feedback.dislike": "Kombini sevmedim",
-  "feedback.thanks": "Geri bildirimin için teşekkürler — öneriler buna göre ayarlanıyor."
+  "feedback.thanks": "Geri bildirimin için teşekkürler — öneriler buna göre ayarlanıyor.",
+  "settings.timeEdit": "Değiştir",
+  "settings.instantTitle": "Anlık hava bildirimleri",
+  "settings.instantSubtitle": "Hava belirgin şekilde değişirse (yağmur başlar, ani soğuma, sertleşme) uygulama açıkken bildirim alırsın. Günde her tür için en fazla bir kez.",
+  "alert.stormTitle": "Hava sertleşiyor",
+  "alert.stormBody": "Fırtına, yoğun kar veya aşırı rüzgâr bekleniyor — dışarı çıkmadan önce resmi uyarıları kontrol et.",
+  "alert.rainTitle": "Yağmur ihtimali yükseldi",
+  "alert.rainBody": "Bugün yağmur ihtimali belirgin şekilde arttı — şemsiye veya su geçirmez mont düşünebilirsin.",
+  "alert.coldTitle": "Hava ani soğuyor",
+  "alert.coldBody": "Beklenen sıcaklık son tahmine göre en az 5° düştü — kombinini gözden geçir.",
+  "wardrobe.title": "Gardırop",
+  "wardrobe.subtitle": "Sahip olduğun parçaları işaretle; önerilerde dolabındakiler vurgulanır.",
+  "wardrobe.empty": "Henüz parça eklemedin. Aşağıdan dolabındaki kıyafetleri işaretle.",
+  "wardrobe.owned": "Dolabında"
 }

@@ -21,6 +21,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorView } from '@/components/ErrorView';
+import { GarmentIcon } from '@/components/GarmentIcon';
 import { LoadingView } from '@/components/LoadingView';
 import { WelcomeView } from '@/components/WelcomeView';
 import { WeatherIcon } from '@/components/WeatherIcon';
@@ -197,9 +198,12 @@ export default function TodayScreen() {
         {/* Kıyafet önerisi: büyük başlık + açıklama + sabah/öğle/akşam saatlik şerit */}
         <Animated.View entering={FadeInDown.duration(300).delay(60)}>
           <Glass blur>
-            <Text style={[typography.titleL, { color: theme.text }]} maxFontSizeMultiplier={1.15}>
-              {dayOutfit.title}
-            </Text>
+            <View style={styles.outfitTitleRow}>
+              <GarmentIcon garment={dayOutfit.dayHero} size={34} color={theme.text} weight="duotone" />
+              <Text style={[typography.titleL, styles.outfitTitle, { color: theme.text }]} maxFontSizeMultiplier={1.15}>
+                {dayOutfit.title}
+              </Text>
+            </View>
             {description ? (
               <Text style={[typography.body, styles.cardDesc, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3} numberOfLines={3}>
                 {description}
@@ -401,6 +405,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     gap: 2,
+  },
+  outfitTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  outfitTitle: {
+    flexShrink: 1,
   },
   cardDesc: {
     marginTop: spacing.xs,

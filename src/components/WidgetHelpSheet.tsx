@@ -19,9 +19,9 @@ interface WidgetHelpSheetProps {
 export type WidgetKind = 'mini' | 'small' | 'medium';
 
 export const WIDGETS: { kind: WidgetKind; name: string; cells: string; hint: string; height: number; provider: string }[] = [
-  { kind: 'mini', name: 'Mini', cells: '2×1', hint: 'settings.widgetMiniHint', height: 44, provider: 'Mini' },
-  { kind: 'small', name: 'Küçük', cells: '3×2', hint: 'settings.widgetSmallHint', height: 92, provider: 'Kucuk' },
-  { kind: 'medium', name: 'Orta', cells: '4×2', hint: 'settings.widgetMediumHint', height: 104, provider: 'Orta' },
+  { kind: 'mini', name: 'Mini', cells: '2×1', hint: 'settings.widgetMiniHint', height: 56, provider: 'Mini' },
+  { kind: 'small', name: 'Küçük', cells: '3×2', hint: 'settings.widgetSmallHint', height: 118, provider: 'Kucuk' },
+  { kind: 'medium', name: 'Orta', cells: '4×2', hint: 'settings.widgetMediumHint', height: 136, provider: 'Orta' },
 ];
 
 const BG_OPTIONS: { value: WidgetBgMode; labelKey: string }[] = [
@@ -33,7 +33,9 @@ const BG_OPTIONS: { value: WidgetBgMode; labelKey: string }[] = [
 /** Uygulama içi widget önizlemesi — gerçek boyut oranlarına yakın (RemoteViews değil). */
 export function WidgetPreview({ kind, height, selected }: { kind: WidgetKind; height: number; selected: boolean }) {
   const theme = useAppTheme();
-  const bg = theme.isDark ? '#1B2733' : '#E4EDF7';
+  const { profile } = useProfile();
+  const isClear = profile.widgetBg === 'clear';
+  const bg = isClear ? 'transparent' : theme.isDark ? '#1B2733' : '#E4EDF7';
   const fg = theme.isDark ? '#EAF1F8' : '#1B2733';
   const sub = theme.isDark ? '#9FB0C0' : '#51616F';
   const accent = theme.isDark ? '#8FB8FF' : '#2F6FED';
@@ -207,18 +209,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   previewTemp: {
-    fontSize: 17,
+    fontSize: 22,
     fontWeight: '800',
   },
   previewSub: {
-    fontSize: 9,
-    marginTop: 1,
+    fontSize: 12,
+    marginTop: 2,
   },
   sampleTag: {
     position: 'absolute',
     top: 4,
     right: 6,
-    fontSize: 8,
+    fontSize: 9,
     fontWeight: '600',
     letterSpacing: 0.4,
   },

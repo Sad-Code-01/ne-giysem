@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
+  Check,
   CheckCircle,
   Snowflake,
   Sun,
@@ -79,6 +80,7 @@ export default function OutfitScreen() {
   const [selected, setSelected] = useState<DayOutfit | null>(null);
   const [feedback, setFeedback] = useState<OutfitFeedback | null>(null);
   const [feedbackLoaded, setFeedbackLoaded] = useState(false);
+  const wardrobeIds = useMemo(() => new Set(profile.wardrobe), [profile.wardrobe]);
   const fadeStyle = useTabFade();
   const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
 
@@ -197,6 +199,7 @@ export default function OutfitScreen() {
             onDayChange={setDayChoice}
             feedback={feedback}
             feedbackLoaded={feedbackLoaded}
+            wardrobeIds={wardrobeIds}
             onFeedback={(value) => void handleFeedback(value)}
           />
         ) : (
@@ -310,6 +313,7 @@ function DailyView({
   onDayChange,
   feedback,
   feedbackLoaded,
+  wardrobeIds,
   onFeedback,
 }: {
   outfit: DayOutfit;
@@ -318,6 +322,7 @@ function DailyView({
   onDayChange: (next: 0 | 1) => void;
   feedback: OutfitFeedback | null;
   feedbackLoaded: boolean;
+  wardrobeIds: ReadonlySet<string>;
   onFeedback: (value: OutfitFeedback) => void;
 }) {
   const theme = useAppTheme();
@@ -408,6 +413,9 @@ function DailyView({
                     {joinGarmentNames(group)}
                   </Text>
                 </View>
+                {group.items.every((item) => wardrobeIds.has(item.id)) ? (
+                  <Check size={16} color={theme.tabActive} weight="bold" />
+                ) : null}
               </View>
             );
           })}

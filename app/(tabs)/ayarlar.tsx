@@ -5,6 +5,7 @@ import {
   CaretRight,
   CircleHalf,
   DeviceMobile,
+  CoatHanger,
   Info,
   MapPin,
   ShieldCheck,
@@ -182,6 +183,7 @@ export default function SettingsTabScreen() {
             <SettingsRow icon={Bell} label={t('settings.notifTitle')} onPress={() => router.push('/ayarlar/bildirimler')} />
             <View style={styles.hairline} />
             <SettingsRow icon={MapPin} label={t('settings.citiesTitle')} onPress={() => router.push('/ayarlar/konumlar')} />
+            <SettingsRow icon={CoatHanger} label={t('wardrobe.title')} onPress={() => router.push('/ayarlar/dolap')} />
             <View style={styles.hairline} />
             <SettingsRow icon={DeviceMobile} label={t('settings.widgetAdd')} onPress={() => router.push('/ayarlar/widgetler')} />
           </Glass>

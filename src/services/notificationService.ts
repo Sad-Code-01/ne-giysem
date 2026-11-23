@@ -80,6 +80,26 @@ export async function scheduleDailyReminder(params: {
   });
 }
 
+const INSTANT_CHANNEL_ID = 'ng-instant-alerts';
+
+async function ensureInstantChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync(INSTANT_CHANNEL_ID, {
+    name: 'Anlık hava bildirimleri',
+    importance: AndroidImportance.HIGH,
+  });
+}
+
+/** Hava değişimi anında gönderilen tek seferlik bildirim (tekrar etmez). */
+export async function sendInstantNotification(title: string, body: string): Promise<void> {
+  ensureHandler();
+  await ensureInstantChannel();
+  await Notifications.scheduleNotificationAsync({
+    content: { title, body },
+    trigger: null,
+  });
+}
+
 export async function cancelDailyReminder(): Promise<void> {
   try {
     await Notifications.cancelScheduledNotificationAsync(NOTIFICATION_DEFAULTS.identifier);

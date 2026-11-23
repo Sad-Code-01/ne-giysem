@@ -9,6 +9,7 @@ import { locale } from '@/i18n';
 import { ServiceError, isServiceError } from '@/services/http';
 import { getCurrentPlace, requestLocationPermission } from '@/services/locationService';
 import { openMeteoProvider } from '@/services/weather/WeatherProvider';
+import { maybeSendInstantAlerts } from '@/services/instantAlertService';
 import { getConsent } from '@/storage/consent';
 import { pushWidgetUpdate } from '@/widgets/resolveWidgetData';
 import {
@@ -116,6 +117,7 @@ export function useWeatherOutfit(): WeatherOutfitState {
   const load = useCallback(
     async (place: Place): Promise<boolean> => {
       const seq = ++loadSeq.current;
+      const prev = snapshotRef.current;
       try {
         const fresh = await openMeteoProvider.fetchWeather(place);
         if (!isMounted.current || seq !== loadSeq.current) return false;
@@ -126,6 +128,7 @@ export function useWeatherOutfit(): WeatherOutfitState {
         setStatus('ready');
         await setLastSnapshot(fresh);
         void pushWidgetUpdate();
+        void maybeSendInstantAlerts(prev, fresh);
         // GPS'ten otomatik çekilen konum "Konumlarım" listesine de eklensin.
         if (place.source === 'gps') {
           void addCityRef.current(place);
