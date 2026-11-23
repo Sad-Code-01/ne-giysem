@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 
-import { NOTIFICATION_MAX_DATA_AGE_MS } from '@/constants/config';
+import {
+  FEEDBACK_PROMPT_INTERVAL_MS,
+  NOTIFICATION_MAX_DATA_AGE_MS,
+} from '@/constants/config';
 import {
   feedbackPromptContent,
   feedbackPromptTime,
@@ -16,7 +19,7 @@ import {
   scheduleDailyReminder,
   scheduleFeedbackPrompt,
 } from '@/services/notificationService';
-import { getFeedbackFor } from '@/storage/feedback';
+import { getFeedbackFor, getLastFeedbackPromptAt, setLastFeedbackPromptAt } from '@/storage/feedback';
 import type { WeatherSnapshot } from '@/types';
 
 /**
@@ -61,6 +64,12 @@ export function useDailyReminder(snapshot: WeatherSnapshot | null): void {
         await cancelFeedbackPrompt();
         return;
       }
+      // Sıklık sınırı: son sorudan bu yana 3 gün geçmediyse sorma.
+      const lastPromptAt = await getLastFeedbackPromptAt();
+      if (Date.now() - lastPromptAt < FEEDBACK_PROMPT_INTERVAL_MS) {
+        await cancelFeedbackPrompt();
+        return;
+      }
       const { hour: pHour, minute: pMinute } = feedbackPromptTime(notifHour, notifMinute);
       let target = nextTriggerDate(pHour, pMinute);
       if (await getFeedbackFor(localDateKey(target))) {
@@ -68,6 +77,7 @@ export function useDailyReminder(snapshot: WeatherSnapshot | null): void {
       }
       const prompt = feedbackPromptContent();
       await scheduleFeedbackPrompt({ date: target, title: prompt.title, body: prompt.body });
+      await setLastFeedbackPromptAt(Date.now());
     })();
 
     return () => {

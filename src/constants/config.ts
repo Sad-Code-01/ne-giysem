@@ -95,6 +95,9 @@ export const NOTIFICATION_DEFAULTS = {
 /** Bildirim planlaması için hava verisinin kabul edilebilir en yüksek yaşı (24 saat). */
 export const NOTIFICATION_MAX_DATA_AGE_MS = 24 * 60 * 60 * 1000;
 
+/** "Bugün nasıldı?" sorusunun en sık sorulma aralığı — kullanıcıyı yormamak için 3 gün. */
+export const FEEDBACK_PROMPT_INTERVAL_MS = 3 * 24 * 60 * 60 * 1000;
+
 /** Öneri motoru v2 eşikleri (Yönerge 6.2–6.6). */
 export const OUTFIT_THRESHOLDS = {
   /** Dilim maks rüzgâr bu değerin üstündeyse −1°C (km/h). */

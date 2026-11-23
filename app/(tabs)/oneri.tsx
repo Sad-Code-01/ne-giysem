@@ -37,7 +37,7 @@ import { buildSlotWeathers } from '@/logic/slots';
 import { getWeatherVisual } from '@/logic/weatherCodes';
 import { warningIcon } from '@/logic/warningIcons';
 import { onScrollToTopRequest } from '@/lib/scrollToTop';
-import { getFeedbackFor, recordFeedback } from '@/storage/feedback';
+import { getFeedbackFor, recordFeedback, setLastFeedbackPromptAt } from '@/storage/feedback';
 import { cancelFeedbackPrompt } from '@/services/notificationService';
 import { locale, t } from '@/i18n';
 import { useAppTheme } from '@/theme/useAppTheme';
@@ -135,6 +135,8 @@ export default function OutfitScreen() {
     await recordFeedback(feedbackDate, value);
     // Bekleyen akşam "nasıldı?" bildirimi varsa iptal et — aynı gün iki kez sorulmaz.
     void cancelFeedbackPrompt();
+    // Uygulama içi cevap da "soru soruldu" sayılır: 3 günlük sıklık sıfırlanır.
+    void setLastFeedbackPromptAt(Date.now());
     await setLearnedOffset(applyFeedbackToOffset(profile.learnedOffset, value));
   };
 

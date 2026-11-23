@@ -9,6 +9,7 @@ import {
   Info,
   MapPin,
   ShieldCheck,
+  Sparkle,
   Thermometer,
   type Icon,
 } from 'phosphor-react-native';
@@ -34,6 +35,7 @@ import { onScrollToTopRequest } from '@/lib/scrollToTop';
 import { pushWidgetUpdate } from '@/widgets/resolveWidgetData';
 import { cancelDailyReminder } from '@/services/notificationService';
 import { clearConsent } from '@/storage/consent';
+import { clearAiApiKey } from '@/storage/aiKey';
 import { clearLastSnapshot, setOnboardingDone, setSelectedPlace } from '@/storage/cache';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { getThemeMode, setThemeMode, type ThemeMode } from '@/theme/themeMode';
@@ -145,6 +147,7 @@ export default function SettingsTabScreen() {
       await setOnboardingDone(false);
       await setSelectedPlace(null);
       await clearLastSnapshot();
+      await clearAiApiKey();
       await resetProfile();
       void pushWidgetUpdate();
       setConfirmOpen(false);
@@ -186,6 +189,8 @@ export default function SettingsTabScreen() {
             <SettingsRow icon={CoatHanger} label={t('wardrobe.title')} onPress={() => router.push('/ayarlar/dolap')} />
             <View style={styles.hairline} />
             <SettingsRow icon={DeviceMobile} label={t('settings.widgetAdd')} onPress={() => router.push('/ayarlar/widgetler')} />
+            <View style={styles.hairline} />
+            <SettingsRow icon={Sparkle} label={t('ai.title')} onPress={() => router.push('/ayarlar/asistan')} />
           </Glass>
           {!profile.notifEnabled ? (
             <Text style={[typography.micro, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>

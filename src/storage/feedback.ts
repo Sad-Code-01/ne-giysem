@@ -7,6 +7,8 @@ import type { OutfitFeedback } from '@/logic/feedback';
  * anket tekrarlanmaz). Anahtar: günün ISO tarih anahtarı (YYYY-MM-DD).
  */
 const STORAGE_KEY = 'ng_feedback_v1';
+/** Son geri bildirim sorusunun (bildirim veya uygulama içi) zaman damgası. */
+const PROMPT_KEY = 'ng_feedback_prompt_v1';
 /** Saklanan kayıtların üst sınırı — eski günler budanır. */
 const KEEP_DAYS = 30;
 
@@ -45,5 +47,25 @@ export async function recordFeedback(dateKey: string, value: OutfitFeedback): Pr
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(map));
   } catch {
     // depolama hatası sessizce yutulur — geri bildirim kritik değil
+  }
+}
+
+/** Son sorunun epoch ms'i; hiç sorulmadıysa 0. */
+export async function getLastFeedbackPromptAt(): Promise<number> {
+  try {
+    const raw = await AsyncStorage.getItem(PROMPT_KEY);
+    const value = raw ? Number(raw) : 0;
+    return Number.isFinite(value) ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/** Sorunun sorulduğu anı kaydeder — 3 günlük sıklık sınırı bununla işler. */
+export async function setLastFeedbackPromptAt(epochMs: number): Promise<void> {
+  try {
+    await AsyncStorage.setItem(PROMPT_KEY, String(epochMs));
+  } catch {
+    // yutulur
   }
 }

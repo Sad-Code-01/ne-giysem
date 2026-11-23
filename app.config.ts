@@ -88,6 +88,7 @@ const config: ExpoConfig = {
       },
     ],
     ['react-native-android-widget', widgetConfig],
+    'expo-secure-store',
     [
       'expo-splash-screen',
       {
