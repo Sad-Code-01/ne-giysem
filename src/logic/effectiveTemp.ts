@@ -1,5 +1,6 @@
 import { OUTFIT_THRESHOLDS } from '@/constants/config';
 import type {
+  ActivityLevel,
   ColdSensitivity,
   OutfitProfile,
   TransportMode,
@@ -54,7 +55,16 @@ export interface EffectiveTempInput {
   mean14: number;
   /** Ulaşım modu. */
   transport: TransportMode;
+  /** Aktivite seviyesi — metabolik ısı; hareketsiz + serin hissi. */
+  activity?: ActivityLevel;
 }
+
+/** Aktivite ofseti (°C): hareketsiz üşütür, hareket ısıtır. */
+export const ACTIVITY_OFFSET: Record<ActivityLevel, number> = {
+  desk: -0.5,
+  walk: 0,
+  active: 0.5,
+};
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -91,6 +101,9 @@ export function computeEffectiveTemp(input: EffectiveTempInput): number {
   if (input.maxWind >= OUTFIT_THRESHOLDS.transportWindMin) {
     effective += TRANSPORT_PENALTY[input.transport];
   }
+
+  // 3b) Aktivite: hareketsizlik üşütür, hareket ısıtır.
+  effective += ACTIVITY_OFFSET[input.activity ?? 'walk'];
 
   // 4) Kişisel + öğrenilmiş ofset.
   effective += input.profileOffset + input.learnedOffset;

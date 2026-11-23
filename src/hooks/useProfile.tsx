@@ -19,6 +19,8 @@ import {
   setNotifSchedule,
   setWidgetBg,
   setInstantAlerts,
+  setActivity,
+  setRainPreference,
   toggleWardrobeItem,
   toOutfitProfile,
   type NotificationPeriod,
@@ -26,7 +28,7 @@ import {
   type WidgetBgMode,
 } from '@/storage/profileStore';
 import { pushWidgetUpdate } from '@/widgets/resolveWidgetData';
-import type { ColdSensitivity, OutfitProfile, Place } from '@/types';
+import type { ActivityLevel, ColdSensitivity, OutfitProfile, Place, RainPreference } from '@/types';
 
 /**
  * Profil bağlamı: üşüme ayarı, şehirler, öğrenme ofseti ve bildirim tercihleri.
@@ -43,6 +45,8 @@ interface ProfileContextValue {
   setNotifSchedule: (period: NotificationPeriod, hour: number, minute: number) => Promise<void>;
   setWidgetBg: (value: WidgetBgMode) => Promise<void>;
   setInstantAlerts: (value: boolean) => Promise<void>;
+  setActivity: (value: ActivityLevel) => Promise<void>;
+  setRainPreference: (value: RainPreference) => Promise<void>;
   /** Gardıroba parça ekler/çıkarır (garment id). */
   toggleWardrobeItem: (garmentId: string) => Promise<void>;
   addCity: (place: Place) => Promise<void>;
@@ -88,6 +92,14 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       setInstantAlerts: async (enabled) => {
         setProfile(await setInstantAlerts(enabled));
       },
+      setActivity: async (level) => {
+        setProfile(await setActivity(level));
+        void pushWidgetUpdate();
+      },
+      setRainPreference: async (pref) => {
+        setProfile(await setRainPreference(pref));
+        void pushWidgetUpdate();
+      },
       toggleWardrobeItem: async (garmentId) => {
         setProfile(await toggleWardrobeItem(garmentId));
       },
@@ -129,6 +141,8 @@ export function useProfile(): ProfileContextValue {
         widgetBg: 'solid',
         wardrobe: [],
         instantAlerts: false,
+        activity: 'walk',
+        rainPreference: 'both',
       },
       outfitProfile: { coldSensitivity: 'normal', transport: 'walk', learnedOffset: 0 },
       setColdSensitivity: async () => undefined,
@@ -137,6 +151,8 @@ export function useProfile(): ProfileContextValue {
       setNotifSchedule: async () => undefined,
       setWidgetBg: async () => undefined,
       setInstantAlerts: async () => undefined,
+      setActivity: async () => undefined,
+      setRainPreference: async () => undefined,
       toggleWardrobeItem: async () => undefined,
       addCity: async () => undefined,
       removeCity: async () => undefined,

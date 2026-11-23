@@ -315,5 +315,14 @@
   "wardrobe.title": "Gardırop",
   "wardrobe.subtitle": "Sahip olduğun parçaları işaretle; önerilerde dolabındakiler vurgulanır.",
   "wardrobe.empty": "Henüz parça eklemedin. Aşağıdan dolabındaki kıyafetleri işaretle.",
-  "wardrobe.owned": "Dolabında"
+  "wardrobe.owned": "Dolabında",
+  "settings.activityTitle": "Günlük aktiviten",
+  "settings.rainTitle": "Yağmurda ne tercih edersin?",
+  "activity.desk": "Çoğunlukla oturarak",
+  "activity.walk": "Normal yürüyüş",
+  "activity.active": "Yoğun hareket",
+  "rain.umbrella": "Şemsiye",
+  "rain.raincoat": "Yağmurluk",
+  "rain.both": "İkisi de olur",
+  "rain.strongOnly": "Yalnızca şiddetli yağışta"
 }

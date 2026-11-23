@@ -14,6 +14,7 @@ import type {
   DayOutfit,
   Garment,
   OutfitProfile,
+  RainPreference,
   TimeSlotId,
   SlotOutfit,
   SlotWeather,
@@ -126,7 +127,11 @@ function hasId(items: Garment[], id: string): boolean {
  * Tek dilim için taban kombin + koşul düzeltmeleri (6.5).
  * `humidity`: nem kontrolü için anlık nem (%).
  */
-export function buildSlotOutfit(slot: SlotWeather, humidity: number): SlotOutfit {
+export function buildSlotOutfit(
+  slot: SlotWeather,
+  humidity: number,
+  options?: { rainPreference?: RainPreference }
+): SlotOutfit {
   const spec = bandFor(slot.effectiveTemp);
   const warnings: string[] = [];
 
@@ -149,8 +154,16 @@ export function buildSlotOutfit(slot: SlotWeather, humidity: number): SlotOutfit
 
   // Yağmur: olasılık, miktar (mm) ve WMO kodu ayrı sinyallerdir;
   // herhangi biri eşiği aşarsa şemsiye önerilir, güçlüsü mont/bot.
-  const rainSignal = wetCode || precip >= OUTFIT_THRESHOLDS.rainUmbrella || precipMm >= 1;
-  const heavyRain = precip >= OUTFIT_THRESHOLDS.rainWaterproof || wetCode || precipMm >= 4;
+  // Kullanıcının yağmur tercihi eşikleri kaydırır (profil.rainPreference).
+  const pref = options?.rainPreference ?? 'both';
+  const umbrellaMin = pref === 'strong-only' ? 70 : OUTFIT_THRESHOLDS.rainUmbrella;
+  const umbrellaMm = pref === 'strong-only' ? 3 : 1;
+  const waterproofMin =
+    pref === 'raincoat' ? 50 : pref === 'umbrella' ? 80 : OUTFIT_THRESHOLDS.rainWaterproof;
+  const waterproofMm = pref === 'raincoat' ? 3 : pref === 'umbrella' ? 6 : 4;
+  const codeSignal = wetCode && (pref !== 'strong-only' || precipMm >= 2);
+  const rainSignal = codeSignal || precip >= umbrellaMin || precipMm >= umbrellaMm;
+  const heavyRain = precip >= waterproofMin || wetCode || precipMm >= waterproofMm;
   if (rainSignal) {
     if (!hasId(items, 'semsiye')) items = upsert(items, requireGarment('semsiye'));
     if (heavyRain) {
@@ -278,7 +291,9 @@ export function buildDayOutfit(
 
   const wardrobeIds = profile.wardrobe?.length ? new Set(profile.wardrobe) : null;
   const slots: SlotOutfit[] = slotWeathers.map((slotWeather) => {
-    const outfit = buildSlotOutfit(slotWeather, snapshot.current.humidity);
+    const outfit = buildSlotOutfit(slotWeather, snapshot.current.humidity, {
+      rainPreference: profile.rainPreference,
+    });
     if (!wardrobeIds) return outfit;
     const items = applyWardrobe(outfit.items, wardrobeIds);
     const hero =

@@ -244,6 +244,10 @@ export interface DayOutfit {
 /** Kişiselleştirme girdileri (6.2). Faz 2'de profileStore'dan gelir. */
 export type ColdSensitivity = 'none' | 'little' | 'normal' | 'quick' | 'very';
 export type TransportMode = 'walk' | 'bike' | 'motorcycle' | 'transit' | 'car';
+/** Günlük aktivite — metabolik ısı üretimi etkili sıcaklığı değiştirir. */
+export type ActivityLevel = 'desk' | 'walk' | 'active';
+/** Yağmur donanım tercihi — şemsiye mi yağmurluk mu ağırlıklı. */
+export type RainPreference = 'umbrella' | 'raincoat' | 'both' | 'strong-only';
 
 export interface OutfitProfile {
   coldSensitivity: ColdSensitivity;
@@ -252,6 +256,10 @@ export interface OutfitProfile {
   learnedOffset: number;
   /** Gardırop: kullanıcının sahip olduğu garment id'leri (opsiyonel). */
   wardrobe?: string[];
+  /** Aktivite seviyesi (opsiyonel, varsayılan 'walk'). */
+  activity?: ActivityLevel;
+  /** Yağmur donanım tercihi (opsiyonel, varsayılan 'both'). */
+  rainPreference?: RainPreference;
 }
 
 /** Hava/kalıcı hata türleri. */

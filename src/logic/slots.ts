@@ -143,6 +143,7 @@ export function buildSlotWeathers(
       learnedOffset: profile.learnedOffset,
       mean14,
       transport: profile.transport,
+      activity: profile.activity,
     });
 
     return {

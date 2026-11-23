@@ -315,5 +315,14 @@
   "wardrobe.title": "Wardrobe",
   "wardrobe.subtitle": "Mark the pieces you own; owned items are highlighted in suggestions.",
   "wardrobe.empty": "No items yet. Mark the clothes in your wardrobe below.",
-  "wardrobe.owned": "In your wardrobe"
+  "wardrobe.owned": "In your wardrobe",
+  "settings.activityTitle": "Your daily activity",
+  "settings.rainTitle": "Rain gear preference?",
+  "activity.desk": "Mostly seated",
+  "activity.walk": "Normal walking",
+  "activity.active": "Active movement",
+  "rain.umbrella": "Umbrella",
+  "rain.raincoat": "Raincoat",
+  "rain.both": "Either works",
+  "rain.strongOnly": "Only heavy rain"
 }

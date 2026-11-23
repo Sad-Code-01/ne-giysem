@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { NOTIFICATION_DEFAULTS, OUTFIT_THRESHOLDS } from '@/constants/config';
-import type { ColdSensitivity, OutfitProfile, Place } from '@/types';
+import type { ActivityLevel, ColdSensitivity, OutfitProfile, Place, RainPreference } from '@/types';
 
 /**
  * Profil deposu: üşüme ayarı, öğrenme ofseti, kayıtlı şehirler ve
@@ -32,6 +32,10 @@ export interface StoredProfile {
   wardrobe: string[];
   /** Anlık hava değişimi bildirimleri (yağmur, sert düşüş, fırtına). */
   instantAlerts: boolean;
+  /** Günlük aktivite seviyesi (motorun etkili sıcaklığına girer). */
+  activity: ActivityLevel;
+  /** Yağmur donanım tercihi (şemsiye/yağmurluk eşikleri). */
+  rainPreference: RainPreference;
 }
 
 export const DEFAULT_STORED_PROFILE: StoredProfile = {
@@ -45,11 +49,15 @@ export const DEFAULT_STORED_PROFILE: StoredProfile = {
   widgetBg: 'solid',
   wardrobe: [],
   instantAlerts: false,
+  activity: 'walk',
+  rainPreference: 'both',
 };
 
 const COLD_SENSITIVITIES: readonly ColdSensitivity[] = ['none', 'little', 'normal', 'quick', 'very'];
 const NOTIF_PERIODS: readonly NotificationPeriod[] = ['sabah', 'aksam'];
 const WIDGET_BG_MODES: readonly WidgetBgMode[] = ['solid', 'translucent', 'clear'];
+const ACTIVITY_LEVELS: readonly ActivityLevel[] = ['desk', 'walk', 'active'];
+const RAIN_PREFERENCES: readonly RainPreference[] = ['umbrella', 'raincoat', 'both', 'strong-only'];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -110,6 +118,12 @@ function sanitize(raw: unknown): StoredProfile {
       ? raw.wardrobe.filter((item): item is string => typeof item === 'string')
       : [],
     instantAlerts: raw.instantAlerts === true,
+    activity: ACTIVITY_LEVELS.includes(raw.activity as ActivityLevel)
+      ? (raw.activity as ActivityLevel)
+      : DEFAULT_STORED_PROFILE.activity,
+    rainPreference: RAIN_PREFERENCES.includes(raw.rainPreference as RainPreference)
+      ? (raw.rainPreference as RainPreference)
+      : DEFAULT_STORED_PROFILE.rainPreference,
   };
 }
 
@@ -189,6 +203,20 @@ export async function setInstantAlerts(value: boolean): Promise<StoredProfile> {
   return next;
 }
 
+export async function setActivity(value: ActivityLevel): Promise<StoredProfile> {
+  const profile = await getStoredProfile();
+  const next = { ...profile, activity: value };
+  await save(next);
+  return next;
+}
+
+export async function setRainPreference(value: RainPreference): Promise<StoredProfile> {
+  const profile = await getStoredProfile();
+  const next = { ...profile, rainPreference: value };
+  await save(next);
+  return next;
+}
+
 /** Gardıroba parça ekler/çıkarır (aynı id iki kez eklenirse ikisi de kalır). */
 export async function toggleWardrobeItem(garmentId: string): Promise<StoredProfile> {
   const profile = await getStoredProfile();
@@ -237,5 +265,7 @@ export function toOutfitProfile(profile: StoredProfile): OutfitProfile {
     transport: 'walk',
     learnedOffset: profile.learnedOffset,
     wardrobe: profile.wardrobe,
+    activity: profile.activity,
+    rainPreference: profile.rainPreference,
   };
 }
