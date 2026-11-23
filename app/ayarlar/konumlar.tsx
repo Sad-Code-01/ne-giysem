@@ -1,7 +1,7 @@
 import { MapPin, NavigationArrow, Trash } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,7 +10,7 @@ import { SettingsHeader } from '@/components/SettingsHeader';
 import { useProfile } from '@/hooks/useProfile';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { t } from '@/i18n';
-import { getCurrentPlace, hasLocationPermission } from '@/services/locationService';
+import { getCurrentPlace, hasLocationPermission, isLocationPermissionBlocked, isLocationServiceEnabled, openAppSettings } from '@/services/locationService';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { MIN_TOUCH_SIZE, spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
@@ -25,9 +25,24 @@ export default function CitiesScreen() {
   const { selectPlace } = useWeatherContext();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
+  const [servicesOff, setServicesOff] = useState(false);
+
+  // Sayfa odakta/arka plandan dönüldüğünde izin+servis durumunu tazele (roadmap §7.8).
+  useFocusEffect(
+    useCallback(() => {
+      void isLocationPermissionBlocked().then(setBlocked);
+      void isLocationServiceEnabled().then((on) => setServicesOff(!on));
+    }, [])
+  );
 
   const addCurrentLocation = async (): Promise<void> => {
     if (busy) return;
+    // İzin kalıcı reddedildiyse sistem diyaloğu açılmaz — ayarlara yönlendir.
+    if (await isLocationPermissionBlocked()) {
+      openAppSettings();
+      return;
+    }
     // İzin henüz yoksa sistem diyaloğundan önce kısa açıklama göster.
     if (!(await hasLocationPermission())) {
       const approved = await new Promise<boolean>((resolve) => {
@@ -80,6 +95,19 @@ export default function CitiesScreen() {
 
         {error ? (
           <Text style={[typography.caption, { color: theme.text }]}>{error}</Text>
+        ) : null}
+
+        {blocked || servicesOff ? (
+          <>
+            <Text style={[typography.caption, { color: theme.textSecondary }]}>
+              {blocked ? t('settings.locBlockedHint') : t('settings.locServicesOffHint')}
+            </Text>
+            <GlassButton
+              label={t('settings.locOpenSettings')}
+              variant="secondary"
+              onPress={openAppSettings}
+            />
+          </>
         ) : null}
 
         {profile.cities.length === 0 ? (

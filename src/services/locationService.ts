@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import { Linking } from 'react-native';
 
 import { ServiceError } from '@/services/http';
 import type { Place } from '@/types';
@@ -22,6 +23,24 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
       }
     );
   });
+}
+
+/**
+ * İzin kalıcı olarak reddedilmiş mi ("bir daha sorma" dahil)?
+ * Bu durumda sistem diyaloğu açılmaz; tek yol uygulama ayarlarıdır.
+ */
+export async function isLocationPermissionBlocked(): Promise<boolean> {
+  try {
+    const current = await Location.getForegroundPermissionsAsync();
+    return !current.granted && !current.canAskAgain;
+  } catch {
+    return false;
+  }
+}
+
+/** İzin/servis durumunu uygulama ayarları sayfasına yönlendirir. */
+export function openAppSettings(): void {
+  void Linking.openSettings();
 }
 
 /** Konum servisleri açık mı? (Hata durumunda engellememek için `true` varsayılır.) */
