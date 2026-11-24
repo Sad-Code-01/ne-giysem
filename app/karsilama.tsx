@@ -2,7 +2,7 @@ import { Check } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
   FadeOut,
@@ -72,7 +72,7 @@ export default function WelcomeScreen() {
   const reduceMotion = useReducedMotion();
   const { status, snapshot, errorKind, isOffline, start: startWeather, loadMyLocation } =
     useWeatherContext();
-  const { profile, setColdSensitivity, setNotifEnabled, setNotifSchedule, setWardrobeItems } = useProfile();
+  const { profile, setColdSensitivity, setNotifEnabled, setNotifSchedule, setWardrobeItems, setInstantAlerts } = useProfile();
 
   const [step, setStep] = useState(0);
   const [consentChecked, setConsentChecked] = useState(false);
@@ -83,6 +83,7 @@ export default function WelcomeScreen() {
   // Konum isteğinin zamanı: yalnızca bu istekten SONRA gelen veri onay ekranını açar.
   const [placeRequestedAt, setPlaceRequestedAt] = useState(0);
   const [notifOn, setNotifOn] = useState(false);
+  const [instantOn, setInstantOn] = useState(profile?.instantAlerts ?? false);
   const [notifHour, setNotifHour] = useState(21);
   const [notifMinute, setNotifMinute] = useState(0);
   // null → profildeki kayıtlı değer kullanılır; seçim yapılınca üzerine yazılır.
@@ -148,21 +149,23 @@ export default function WelcomeScreen() {
     }
   };
 
+  // Bildirim izinleri: doğrudan sistem diyaloğu — ara açıklama yok.
   const handleNotifToggle = async (value: boolean): Promise<void> => {
     if (!value) {
       setNotifOn(false);
       return;
     }
-    // Sistem diyaloğundan önce kısa açıklama göster (diğer ekranlarla aynı akış).
-    const approved = await new Promise<boolean>((resolve) => {
-      Alert.alert(t('settings.notifPermTitle'), t('settings.notifPermBody'), [
-        { text: t('common.cancel'), style: 'cancel', onPress: () => resolve(false) },
-        { text: t('common.allow'), onPress: () => resolve(true) },
-      ]);
-    });
-    if (!approved) return;
     const granted = await requestNotificationPermission();
     setNotifOn(granted);
+  };
+
+  const handleInstantToggle = async (value: boolean): Promise<void> => {
+    if (!value) {
+      setInstantOn(false);
+      return;
+    }
+    const granted = await requestNotificationPermission();
+    setInstantOn(granted);
   };
 
   const finish = async (enableNotif: boolean): Promise<void> => {
@@ -178,6 +181,7 @@ export default function WelcomeScreen() {
       } else {
         await setNotifEnabled(false);
       }
+      await setInstantAlerts(instantOn);
       await setOnboardingDone(true);
       void startWeather();
       router.replace('/');
@@ -526,6 +530,21 @@ export default function WelcomeScreen() {
                     />
                   </>
                 ) : null}
+                <View style={[styles.notifRow, styles.instantRow]}>
+                  <View style={styles.instantText}>
+                    <Text style={[typography.body, { color: theme.text }]}>{t('settings.instantTitle')}</Text>
+                    <Text style={[typography.micro, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
+                      {t('ob.instantHint')}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={instantOn}
+                    onValueChange={(value) => void handleInstantToggle(value)}
+                    trackColor={{ false: theme.line, true: theme.primary }}
+                    thumbColor={theme.surface}
+                    accessibilityLabel={t('settings.instantTitle')}
+                  />
+                </View>
               </Glass>
               <View style={styles.actions}>
                 <GlassButton label={t('ob.finish')} disabled={busy} onPress={() => void finish(notifOn)} />
@@ -650,6 +669,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: MIN_TOUCH_SIZE,
+  },
+  instantRow: {
+    marginTop: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(120,140,165,0.25)',
+    paddingTop: spacing.sm,
+  },
+  instantText: {
+    flex: 1,
+    gap: 2,
+    paddingRight: spacing.md,
   },
   placeReadyRow: {
     flexDirection: 'row',

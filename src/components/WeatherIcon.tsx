@@ -28,5 +28,8 @@ export function WeatherIcon({ kind, isDay, size = 32, color }: WeatherIconProps)
   }
   const mono = WEATHER_ICON_XML_MONO[key] ?? WEATHER_ICON_XML_MONO[`${kind}:day`];
   if (!mono) return null;
-  return <SvgXml xml={mono} width={size} height={size} color={color ?? theme.text} />;
+  // SvgXml'in `color` prop'u currentColor'ı her ortamda çözmüyor;
+  // rengi doğrudan XML'e gömüyoruz.
+  const ink = color ?? theme.text;
+  return <SvgXml xml={mono.split('currentColor').join(ink)} width={size} height={size} />;
 }

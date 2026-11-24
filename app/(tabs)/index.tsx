@@ -332,7 +332,15 @@ export default function TodayScreen() {
         </Animated.View>
 
         {/* Hava detayları: ayrı bar — UV, bulutluluk, çiy noktası */}
-        <View style={styles.detailBar}>
+        <View
+          style={[
+            styles.detailBar,
+            {
+              backgroundColor: theme.isDark ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.7)',
+              borderColor: theme.line,
+            },
+          ]}
+        >
           <View style={styles.heroStat}>
             <Sun size={15} color={theme.textSecondary} weight="regular" />
             <Text style={[typography.caption, { color: theme.text }]}>{current.uvIndex.toFixed(0)}</Text>
@@ -438,8 +446,11 @@ const styles = StyleSheet.create({
   detailBar: {
     flexDirection: 'row',
     gap: spacing.md,
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.xs,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderWidth: 1,
+    borderRadius: radius.card,
   },
   heroStat: {
     flex: 1,
