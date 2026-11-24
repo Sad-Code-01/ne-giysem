@@ -8,34 +8,11 @@ import { GarmentIcon } from '@/components/GarmentIcon';
 import { SettingsHeader } from '@/components/SettingsHeader';
 import { useProfile } from '@/hooks/useProfile';
 import { GARMENTS, garmentLabel } from '@/logic/garmentCatalog';
+import { GROUP_LABEL, groupGarments } from '@/logic/wardrobeGroups';
 import { t } from '@/i18n';
 import { useAppTheme } from '@/theme/useAppTheme';
 import { MIN_TOUCH_SIZE, spacing } from '@/theme/spacing';
 import { typography } from '@/theme/typography';
-import type { Garment, GarmentCategory } from '@/types';
-
-/** Görüntüleme grupları — motor kategorileri burada birleştirilir. */
-type WardrobeGroupKey = 'top' | 'bottom' | 'outer' | 'shoes' | 'accessory';
-
-const GROUP_OF: Record<GarmentCategory, WardrobeGroupKey> = {
-  top: 'top',
-  base: 'top',
-  mid: 'top',
-  bottom: 'bottom',
-  'base-bottom': 'bottom',
-  outer: 'outer',
-  shoes: 'shoes',
-  accessory: 'accessory',
-};
-
-const GROUP_ORDER: WardrobeGroupKey[] = ['top', 'bottom', 'outer', 'shoes', 'accessory'];
-const GROUP_LABEL: Record<WardrobeGroupKey, string> = {
-  top: 'cat.top',
-  bottom: 'cat.bottom',
-  outer: 'cat.outer',
-  shoes: 'cat.shoes',
-  accessory: 'cat.accessory',
-};
 
 /** Mini gardırop: katalog parçalarını işaretle, önerilerde "dolabında" vurgusu. */
 export default function WardrobeScreen() {
@@ -44,19 +21,7 @@ export default function WardrobeScreen() {
   const { profile, toggleWardrobeItem } = useProfile();
   const owned = useMemo(() => new Set(profile.wardrobe), [profile.wardrobe]);
 
-  const groups = useMemo(() => {
-    const map = new Map<WardrobeGroupKey, Garment[]>();
-    for (const garment of GARMENTS) {
-      const key = GROUP_OF[garment.category];
-      const list = map.get(key) ?? [];
-      list.push(garment);
-      map.set(key, list);
-    }
-    return GROUP_ORDER.filter((key) => map.has(key)).map((key) => ({
-      key,
-      items: map.get(key) ?? [],
-    }));
-  }, []);
+  const groups = useMemo(() => groupGarments(GARMENTS), []);
 
   const ownedCount = owned.size;
 

@@ -328,25 +328,27 @@ export default function TodayScreen() {
                 </View>
               ) : null}
             </View>
-            <View style={styles.heroStatsRow}>
-              <View style={styles.heroStat}>
-                <Sun size={16} color={theme.textSecondary} weight="regular" />
-                <Text style={[typography.caption, { color: theme.text }]}>{current.uvIndex.toFixed(0)}</Text>
-                <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.uvLabel')}</Text>
-              </View>
-              <View style={styles.heroStat}>
-                <Cloud size={16} color={theme.textSecondary} weight="regular" />
-                <Text style={[typography.caption, { color: theme.text }]}>{`%${Math.round(current.cloudCover)}`}</Text>
-                <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.cloudLabel')}</Text>
-              </View>
-              <View style={styles.heroStat}>
-                <Thermometer size={16} color={theme.textSecondary} weight="regular" />
-                <Text style={[typography.caption, { color: theme.text }]}>{`${Math.round(current.dewPoint)}°`}</Text>
-                <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.dewLabel')}</Text>
-              </View>
-            </View>
           </Glass>
         </Animated.View>
+
+        {/* Hava detayları: ayrı bar — UV, bulutluluk, çiy noktası */}
+        <View style={styles.detailBar}>
+          <View style={styles.heroStat}>
+            <Sun size={15} color={theme.textSecondary} weight="regular" />
+            <Text style={[typography.caption, { color: theme.text }]}>{current.uvIndex.toFixed(0)}</Text>
+            <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.uvLabel')}</Text>
+          </View>
+          <View style={styles.heroStat}>
+            <Cloud size={15} color={theme.textSecondary} weight="regular" />
+            <Text style={[typography.caption, { color: theme.text }]}>{`%${Math.round(current.cloudCover)}`}</Text>
+            <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.cloudLabel')}</Text>
+          </View>
+          <View style={styles.heroStat}>
+            <Thermometer size={15} color={theme.textSecondary} weight="regular" />
+            <Text style={[typography.caption, { color: theme.text }]}>{`${Math.round(current.dewPoint)}°`}</Text>
+            <Text style={[typography.micro, { color: theme.textSecondary }]}>{t('outfit.dewLabel')}</Text>
+          </View>
+        </View>
 
         {showOffline ? (
           <Text style={[typography.caption, { color: theme.text }]}>
@@ -432,6 +434,12 @@ const styles = StyleSheet.create({
   heroStatsRow: {
     flexDirection: 'row',
     gap: spacing.md,
+  },
+  detailBar: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
   heroStat: {
     flex: 1,

@@ -1,11 +1,11 @@
 import {
   CoatHanger,
   Hand,
-  Hoodie,
   Infinity as Inf,
   Sneaker,
 } from 'phosphor-react-native';
 
+import { CoatIcon } from '@/components/CoatIcon';
 import { requireGarment } from '@/logic/garmentCatalog';
 import { CATEGORY_ICON, garmentIcon } from '@/logic/itemIcons';
 import { groupOutfitItems, joinGarmentNames, uniqueLines } from '@/logic/outfitGrouping';
@@ -58,7 +58,7 @@ describe('garmentIcon eşlemesi (itemIcons)', () => {
 
   it('mont mont ailesi ikonuna düşer', () => {
     for (const id of ['mont', 'kalin-mont', 'cok-kalin-mont', 'su-gecirmez-mont', 'ince-ceket']) {
-      expect(garmentIcon(requireGarment(id))).toBe(Hoodie);
+      expect(garmentIcon(requireGarment(id))).toBe(CoatIcon);
     }
   });
 

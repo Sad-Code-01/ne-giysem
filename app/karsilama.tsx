@@ -1,7 +1,7 @@
 import { Check } from 'phosphor-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -17,6 +17,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Glass, GlassButton, ScreenBackground } from '@/components/glass';
+import { GarmentIcon } from '@/components/GarmentIcon';
 import { SheetModal } from '@/components/SheetModal';
 import { TimeWheel } from '@/components/TimeWheel';
 import { WeatherIcon } from '@/components/WeatherIcon';
@@ -24,6 +25,8 @@ import { useProfile } from '@/hooks/useProfile';
 import { useWeatherContext } from '@/hooks/useWeatherContext';
 import { t } from '@/i18n';
 import { acceptConsent } from '@/storage/consent';
+import { GARMENTS, garmentLabel } from '@/logic/garmentCatalog';
+import { GROUP_LABEL, groupGarments } from '@/logic/wardrobeGroups';
 import { setOnboardingDone } from '@/storage/cache';
 import { requestNotificationPermission } from '@/services/notificationService';
 import { isLocationPermissionBlocked, isLocationServiceEnabled, openAppSettings, openLocationSettings } from '@/services/locationService';
@@ -55,7 +58,7 @@ const COLD_OPTIONS: readonly { value: ColdSensitivity; key: string }[] = [
   { value: 'very', key: 'cold.very' },
 ];
 
-const STEP_COUNT = 5;
+const STEP_COUNT = 6;
 
 function progressLabel(step: number): string {
   return `${step + 1}/${STEP_COUNT}`;
@@ -69,7 +72,7 @@ export default function WelcomeScreen() {
   const reduceMotion = useReducedMotion();
   const { status, snapshot, errorKind, isOffline, start: startWeather, loadMyLocation } =
     useWeatherContext();
-  const { profile, setColdSensitivity, setNotifEnabled, setNotifSchedule } = useProfile();
+  const { profile, setColdSensitivity, setNotifEnabled, setNotifSchedule, setWardrobeItems } = useProfile();
 
   const [step, setStep] = useState(0);
   const [consentChecked, setConsentChecked] = useState(false);
@@ -84,7 +87,21 @@ export default function WelcomeScreen() {
   const [notifMinute, setNotifMinute] = useState(0);
   // null → profildeki kayıtlı değer kullanılır; seçim yapılınca üzerine yazılır.
   const [coldChoice, setColdChoice] = useState<ColdSensitivity | null>(null);
+  // Gardırop seçimi (opsiyonel adım): profil kaydı doluysa onunla başla.
+  const [wardrobeSel, setWardrobeSel] = useState<Set<string>>(() => new Set(profile?.wardrobe ?? []));
   const [busy, setBusy] = useState(false);
+
+  const wardrobeGroups = useMemo(() => groupGarments(GARMENTS), []);
+
+  const toggleWardrobe = (id: string): void => {
+    setWardrobeSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    void Haptics.selectionAsync().catch(() => undefined);
+  };
 
   const goTo = (next: number): void => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
@@ -419,6 +436,67 @@ export default function WelcomeScreen() {
           {step === 4 ? (
             <Animated.View key="s4" entering={enterAnim} exiting={exitAnim} style={styles.step}>
               <Text style={[typography.titleM, { color: theme.text }]} maxFontSizeMultiplier={1.2}>
+                {t('ob.wardrobeTitle')}
+              </Text>
+              <Text style={[typography.body, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
+                {t('ob.wardrobeBody')}
+              </Text>
+              {wardrobeGroups.map((group) => (
+                <View key={group.key} style={styles.wardrobeGroup}>
+                  <Text style={[typography.micro, { color: theme.textSecondary }]}>{t(GROUP_LABEL[group.key])}</Text>
+                  <View style={styles.wardrobeGrid}>
+                    {group.items.map((garment) => {
+                      const active = wardrobeSel.has(garment.id);
+                      return (
+                        <Pressable
+                          key={garment.id}
+                          onPress={() => toggleWardrobe(garment.id)}
+                          accessibilityRole="button"
+                          accessibilityState={{ selected: active }}
+                          accessibilityLabel={garmentLabel(garment)}
+                          style={({ pressed }) => [
+                            styles.wardrobeChip,
+                            {
+                              backgroundColor: active
+                                ? 'rgba(47,111,237,0.14)'
+                                : theme.isDark
+                                  ? 'rgba(255,255,255,0.06)'
+                                  : 'rgba(255,255,255,0.6)',
+                              borderColor: active ? theme.primary : theme.line,
+                              opacity: pressed ? 0.75 : 1,
+                            },
+                          ]}
+                        >
+                          <GarmentIcon garment={garment} size={20} color={theme.text} weight="duotone" />
+                          <Text style={[typography.caption, { color: theme.text }]} numberOfLines={1}>
+                            {garmentLabel(garment)}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+              ))}
+              <View style={styles.actions}>
+                <GlassButton
+                  label={t('ob.wardrobeNext')}
+                  onPress={() => {
+                    void setWardrobeItems([...wardrobeSel]);
+                    goTo(5);
+                  }}
+                />
+                <GlassButton
+                  label={t('ob.wardrobeSkip')}
+                  variant="secondary"
+                  onPress={() => goTo(5)}
+                />
+              </View>
+            </Animated.View>
+          ) : null}
+
+          {step === 5 ? (
+            <Animated.View key="s5" entering={enterAnim} exiting={exitAnim} style={styles.step}>
+              <Text style={[typography.titleM, { color: theme.text }]} maxFontSizeMultiplier={1.2}>
                 {t('ob.notifTitle')}
               </Text>
               <Text style={[typography.body, { color: theme.textSecondary }]} maxFontSizeMultiplier={1.3}>
@@ -599,5 +677,23 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     paddingHorizontal: spacing.lg,
     minHeight: MIN_TOUCH_SIZE + 8,
+  },
+  wardrobeGroup: {
+    gap: spacing.xs,
+  },
+  wardrobeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  wardrobeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    maxWidth: '48%',
   },
 });

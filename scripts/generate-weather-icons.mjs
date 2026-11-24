@@ -12,7 +12,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const SVG_DIR = join(ROOT, 'node_modules', '@meteocons', 'svg-static', 'flat');
+const FLAT_DIR = join(ROOT, 'node_modules', '@meteocons', 'svg-static', 'flat');
+const MONO_DIR = join(ROOT, 'node_modules', '@meteocons', 'svg-static', 'monochrome');
 const OUT = join(ROOT, 'src', 'components', 'weatherIcons.generated.ts');
 
 /** IllustrationKind + gündüz/gece → meteocons slug. */
@@ -35,18 +36,25 @@ const MAP = {
   'storm:night': 'thunderstorms-night',
 };
 
-const entries = [];
+const flatEntries = [];
+const monoEntries = [];
 for (const [key, slug] of Object.entries(MAP)) {
-  const file = join(SVG_DIR, `${slug}.svg`);
-  const xml = readFileSync(file, 'utf8').trim();
-  entries.push(`  ${JSON.stringify(key)}: ${JSON.stringify(xml)},`);
+  const flat = readFileSync(join(FLAT_DIR, `${slug}.svg`), 'utf8').trim();
+  flatEntries.push(`  ${JSON.stringify(key)}: ${JSON.stringify(flat)},`);
+  const mono = readFileSync(join(MONO_DIR, `${slug}.svg`), 'utf8').trim();
+  monoEntries.push(`  ${JSON.stringify(key)}: ${JSON.stringify(mono)},`);
 }
 
 const content = `/** ÜRETİLMİŞ DOSYA — scripts/generate-weather-icons.mjs ile oluşturuldu. Elle düzenleme. */
 export const WEATHER_ICON_XML: Record<string, string> = {
-${entries.join('\n')}
+${flatEntries.join('\n')}
+};
+
+/** Açık tema varyantı — currentColor kullanır, renk prop ile boyanır. */
+export const WEATHER_ICON_XML_MONO: Record<string, string> = {
+${monoEntries.join('\n')}
 };
 `;
 
 writeFileSync(OUT, content, 'utf8');
-console.log(`weatherIcons.generated.ts yazildi (${entries.length} ikon)`);
+console.log(`weatherIcons.generated.ts yazildi (${flatEntries.length} ikon x2)`);

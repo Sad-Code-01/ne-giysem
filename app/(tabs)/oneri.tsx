@@ -427,6 +427,13 @@ function DailyView({
         </Glass>
       </Animated.View>
 
+      {wardrobeIds.size > 0 &&
+      mainSlot?.items.some((item) => !wardrobeIds.has(item.id)) ? (
+        <Text style={[typography.micro, { color: theme.textSecondary }]}>
+          {t('outfit.missingWardrobe')}
+        </Text>
+      ) : null}
+
       <Animated.View entering={FadeInDown.delay(120).duration(280)}>
         <Glass padded={false} contentStyle={styles.slotsCard}>
           <View style={styles.slots}>

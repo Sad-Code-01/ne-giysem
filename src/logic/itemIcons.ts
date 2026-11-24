@@ -15,13 +15,14 @@ import {
   type Icon,
 } from 'phosphor-react-native';
 
+import { CoatIcon } from '@/components/CoatIcon';
 import type { Garment, GarmentCategory } from '@/types';
 
 /**
  * Kıyafet öğesi → Phosphor ikonu (tek paket: Phosphor).
- * Bilinen boşluklar: atkı ve mont/ceket için özel glif yok;
- * en yakın anlamlı sembol kullanılır (Atkı → Infinity düğüm,
- * mont/ceket → Hoodie). Yanlış anlamlı ikon (askı, el, ayak izi) yok.
+ * Dış giyim (mont/ceket ailesi) özel `CoatIcon` SVG'si kullanır —
+ * Phosphor'da mont glifi yok; gerisi Phosphor'dan gelir.
+ * Atkı → Infinity düğüm, kazak/sweatshirt → Hoodie.
  */
 const GARMENT_ICONS: Record<string, Icon> = {
   // Üst giyim
@@ -41,14 +42,14 @@ const GARMENT_ICONS: Record<string, Icon> = {
   chino: Pants,
   'kalin-pantolon': Pants,
   'termal-alt': Pants,
-  // Dış giyim (mont/ceket ailesi → kapüşonlu mont silüeti)
-  'ince-ceket': Hoodie,
-  ruzgarlik: Hoodie,
-  yagmurluk: Hoodie,
-  mont: Hoodie,
-  'su-gecirmez-mont': Hoodie,
-  'kalin-mont': Hoodie,
-  'cok-kalin-mont': Hoodie,
+  // Dış giyim (mont/ceket ailesi → mont silüeti)
+  'ince-ceket': CoatIcon,
+  ruzgarlik: CoatIcon,
+  yagmurluk: CoatIcon,
+  mont: CoatIcon,
+  'su-gecirmez-mont': CoatIcon,
+  'kalin-mont': CoatIcon,
+  'cok-kalin-mont': CoatIcon,
   // Ayakkabı
   sandalet: Sneaker,
   'spor-ayakkabi': Sneaker,
@@ -71,7 +72,7 @@ export const CATEGORY_ICON: Record<GarmentCategory, Icon> = {
   mid: ShirtFolded,
   bottom: Pants,
   'base-bottom': Pants,
-  outer: Hoodie,
+  outer: CoatIcon,
   shoes: Sneaker,
   accessory: Tag,
 };

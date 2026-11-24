@@ -8,7 +8,7 @@ import {
   isStormCode,
 } from '@/logic/weatherCodes';
 import { addDays, buildSlotWeathers, dayKeyOf } from '@/logic/slots';
-import { applyWardrobe } from '@/logic/wardrobe';
+import { applyWardrobe, wardrobeContextForSlot } from '@/logic/wardrobe';
 import type {
   DayAlert,
   DayOutfit,
@@ -295,7 +295,9 @@ export function buildDayOutfit(
       rainPreference: profile.rainPreference,
     });
     if (!wardrobeIds) return outfit;
-    const items = applyWardrobe(outfit.items, wardrobeIds);
+    // Gardırop ikamesi slot'un kendi havasına göre filtrelenir:
+    // soğuk/yağmurlu havada uyumsuz parça (şort, ıslak ayakkabı) seçilmez.
+    const items = applyWardrobe(outfit.items, wardrobeIds, wardrobeContextForSlot(slotWeather));
     const hero =
       items.find((item) => item.category === 'outer') ??
       items.find((item) => item.category === 'top') ??

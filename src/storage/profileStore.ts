@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { NOTIFICATION_DEFAULTS, OUTFIT_THRESHOLDS } from '@/constants/config';
+import { GARMENTS } from '@/logic/garmentCatalog';
 import type { ActivityLevel, ColdSensitivity, OutfitProfile, Place, RainPreference } from '@/types';
 
 /**
@@ -213,6 +214,16 @@ export async function setActivity(value: ActivityLevel): Promise<StoredProfile> 
 export async function setRainPreference(value: RainPreference): Promise<StoredProfile> {
   const profile = await getStoredProfile();
   const next = { ...profile, rainPreference: value };
+  await save(next);
+  return next;
+}
+
+/** Gardırobu toplu ayarlar (onboarding seçimi); bilinmeyen id'ler elenir. */
+export async function setWardrobeItems(ids: string[]): Promise<StoredProfile> {
+  const profile = await getStoredProfile();
+  const valid = new Set(GARMENTS.map((item) => item.id));
+  const wardrobe = [...new Set(ids)].filter((id) => valid.has(id));
+  const next = { ...profile, wardrobe };
   await save(next);
   return next;
 }

@@ -22,6 +22,7 @@ import {
   setActivity,
   setRainPreference,
   toggleWardrobeItem,
+  setWardrobeItems,
   toOutfitProfile,
   type NotificationPeriod,
   type StoredProfile,
@@ -49,6 +50,8 @@ interface ProfileContextValue {
   setRainPreference: (value: RainPreference) => Promise<void>;
   /** Gardıroba parça ekler/çıkarır (garment id). */
   toggleWardrobeItem: (garmentId: string) => Promise<void>;
+  /** Gardırobu toplu ayarlar (onboarding). */
+  setWardrobeItems: (ids: string[]) => Promise<void>;
   addCity: (place: Place) => Promise<void>;
   removeCity: (place: Place) => Promise<void>;
   /** Tüm profil verilerini varsayılanlara sıfırlar. */
@@ -103,6 +106,9 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
       toggleWardrobeItem: async (garmentId) => {
         setProfile(await toggleWardrobeItem(garmentId));
       },
+      setWardrobeItems: async (ids) => {
+        setProfile(await setWardrobeItems(ids));
+      },
       setNotifEnabled: async (enabled) => {
         setProfile(await setNotifEnabled(enabled));
       },
@@ -154,6 +160,7 @@ export function useProfile(): ProfileContextValue {
       setActivity: async () => undefined,
       setRainPreference: async () => undefined,
       toggleWardrobeItem: async () => undefined,
+      setWardrobeItems: async () => undefined,
       addCity: async () => undefined,
       removeCity: async () => undefined,
       resetProfile: async () => undefined,
